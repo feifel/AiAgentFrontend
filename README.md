@@ -2,6 +2,8 @@
 
 This is the Frontend for my AI Agent Backend (see other project). You can talk and screenshare to the AI, which makes it very efficient to solve any kind of computer problems. It uses WebSocket communication for low latency and streaming. It is written in Svelte 5 and Typescript.
 
+![AI Agent Frontend Screenshot](Screenshot.png)
+
 ## Features
 
 - Talking to AI (audio)
@@ -37,4 +39,4 @@ This is the Frontend for my AI Agent Backend (see other project). You can talk a
 5. Open [http://localhost:5173](http://localhost:5173/) with your browser to see the application.
 
 ## Credits
-This project was heavily inspired by https://github.com/yeyu2/multimodal-client-vite 
+This project was heavily inspired by https://github.com/yeyu2/multimodal-client-vite
