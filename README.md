@@ -14,13 +14,13 @@ This is the Frontend for my AI Agent Backend (see other project). You can talk a
 - Node.js (v16 or higher)
 - npm
 - Modern web browser with screen sharing support
+- AI Agent Backend
 
 ## Setup
-1. Clone the repository
-    
+1. Clone the repository    
     ```
-    git clone https://github.com/feifel/ai-agent-frontend.git
-    cd ai-agent-frontend
+    git clone https://github.com/feifel/AiAgentFrontend.git
+    cd AiAgentFrontend
     ```    
 2. Install dependencies    
     ```
@@ -30,8 +30,7 @@ This is the Frontend for my AI Agent Backend (see other project). You can talk a
     ```
      <WebSocketProvider url="ws://your-websocket-server-url">
     ```    
-    Replace the websocket server url with [localhost:9073](http://localhost:9073). The port should be the one that your  Backend is running (see above)
-    
+    Replace the websocket server url with [localhost:9073](http://localhost:9073). The port should be the one that your AI Agent Backend is running (see other project).    
 4. Run the development server    
     ```
     npm run dev
