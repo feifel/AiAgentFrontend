@@ -1,10 +1,17 @@
 import { writable } from 'svelte/store';
-import { Base64 } from 'js-base64';
 
-interface WebSocketMessage {
-  text?: string;
-  audio?: string;
-  interrupt?: boolean;
+export interface WebSocketState {
+  lastMessage: WebSocketMessage | null;
+  isConnected: boolean;
+  audioLevel: number;
+  playbackAudioLevel: number;
+}
+
+export interface WebSocketMessage {
+  timestamp: number;
+  sender: 'ai' | 'user';
+  type: 'text' | 'audio' | 'interrupt';
+  data: string;
 }
 
 interface MediaChunk {
@@ -22,8 +29,8 @@ export interface WebSocketStore {
 
 export function createWebSocketStore(url: string): WebSocketStore {
   let ws: WebSocket | null = null;
-  let reconnectTimeout: NodeJS.Timeout;
-  let connectionTimeout: NodeJS.Timeout;
+  let reconnectTimeout: number;
+  let connectionTimeout: number;
   let reconnectAttempts = 0;
   const MAX_RECONNECT_DELAY = 30000;
   const INITIAL_RECONNECT_DELAY = 5000;

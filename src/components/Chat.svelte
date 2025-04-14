@@ -1,79 +1,60 @@
 <script lang="ts">
   import { writable } from 'svelte/store';
   import AudioPlayer from './AudioPlayer.svelte';
+  import type { WebSocketStore, WebSocketMessage } from '../stores/websocket';
+  import { getContext } from 'svelte';
 
-  interface Message {
-    type: string;
-    text?: string;
-    audio?: string;
-    sender: 'user' | 'bot';
-    timestamp: number;
-  }
-
+  /*
   export const websocket = writable<{
-    lastMessage: WebSocketMessage | null;
+    lastMessage: ChatHistoryMessage | null;
   }>({
     lastMessage: null,
   });
-  
+  */
+  const wsStore = getContext('websocket') as WebSocketStore;
   let messageInput = '';
-  let messages: Message[] = [];
+  let messages: WebSocketMessage[] = [];
+  let chatContainer: HTMLDivElement;
 
   function handleSubmit() {
     if (messageInput.trim()) {
-      // Add user message
-      messages = [...messages, {
-        type: 'text',
-        text: messageInput,
-        sender: 'user',
-        timestamp: Date.now()
-      }];
-      
-      // Send via websocket
-      websocket.update(ws => {
-        if (ws) {
-          // Send message logic here
-        }
-        return ws;
-      });
-      
+      wsStore.sendMessage({ type: "text", data: { text: messageInput, audio: null, sender: 'user' }, timestamp: Date.now() });
       messageInput = '';
     }
   }
 
   // Subscribe to websocket store to handle incoming messages
-  $: if ($websocket.lastMessage) {
-    const message = $websocket.lastMessage;
-    if (message.type === 'chat' && message.text) {
-      messages = [...messages, {
-        type: 'text',
-        text: message.text,
-        sender: 'bot',
-        timestamp: Date.now()
-      }];
-    } else if (message.type === 'audio' && message.audio) {
-      messages = [...messages, {
-        type: 'audio',
-        audio: message.audio,
-        sender: 'bot',
-        timestamp: Date.now()
-      }];
-    }
+  $: if (wsStore.lastMessage) {
+    const message = {
+      ...wsStore.lastMessage,
+      timestamp: Date.now()
+    };
+    messages = [...messages, message];
+    // Scroll to bottom after message added
+    setTimeout(() => {
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    }, 0);
   }
 </script>
 
-<div class="chat-container">
+<div class="chat-container" bind:this={chatContainer}>
   <div class="messages">
     {#each messages as message (message.timestamp)}
-      <div class="message {message.sender}">
+      <div class="message {message.sender === 'ai' ? 'assistant' : 'user'}">
         <div class="avatar">
-          {message.sender === 'bot' ? 'AI' : 'You'}
+          {#if message.sender === 'ai'}
+            <span>AI</span>
+          {:else}
+            <span>U</span>
+          {/if}
         </div>
         <div class="content">
           {#if message.type === 'text'}
-            <p>{message.text}</p>
-          {:else if message.type === 'audio'}
-            <AudioPlayer base64Audio={message.audio} />
+            <p>{message.data}</p>
+          {:else if message.type === 'audio' && message.data}
+            <AudioPlayer base64Audio={message.data} />
           {/if}
           <span class="timestamp">{new Date(message.timestamp).toLocaleTimeString()}</span>
         </div>
@@ -85,7 +66,7 @@
     <input
       type="text"
       bind:value={messageInput}
-      placeholder="Type your message..."
+      placeholder="Type a message..."
     />
     <button type="submit">Send</button>
   </form>
@@ -96,9 +77,9 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 1rem;
+    background-color: var(--container-bg, #2a2a2a);
+    border-radius: 0.5rem;
+    overflow: hidden;
   }
 
   .messages {
@@ -112,8 +93,8 @@
 
   .message {
     display: flex;
-    gap: 1rem;
-    align-items: flex-start;
+    gap: 0.75rem;
+    align-items: start;
   }
 
   .message.user {
@@ -121,29 +102,34 @@
   }
 
   .avatar {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 50%;
-    background: var(--avatar-bg);
-    color: white;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.875rem;
+    background-color: var(--avatar-bg, #3b82f6);
+    color: white;
+    font-size: 0.75rem;
     font-weight: 500;
   }
 
   .content {
-    background: var(--message-bg);
+    background-color: var(--message-bg, rgba(255, 255, 255, 0.05));
     padding: 0.75rem;
     border-radius: 0.5rem;
     max-width: 70%;
   }
 
+  .user .content {
+    background-color: var(--btn-primary-bg, #3b82f6);
+    color: white;
+  }
+
   .timestamp {
     display: block;
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: var(--text-secondary, rgba(229, 231, 235, 0.6));
     margin-top: 0.25rem;
   }
 
@@ -151,30 +137,28 @@
     display: flex;
     gap: 0.5rem;
     padding: 1rem;
-    background: var(--container-bg);
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color, rgba(229, 231, 235, 0.1));
   }
 
   input {
     flex: 1;
     padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 0.25rem;
-    background: var(--message-bg);
-    color: var(--text-color);
+    border-radius: 0.375rem;
+    background-color: var(--message-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--border-color, rgba(229, 231, 235, 0.1));
+    color: var(--text-color, #ffffff);
   }
 
   button {
     padding: 0.5rem 1rem;
-    background: var(--btn-primary-bg);
+    border-radius: 0.375rem;
+    background-color: var(--btn-primary-bg, #3b82f6);
     color: white;
-    border: none;
-    border-radius: 0.25rem;
     font-weight: 500;
-    cursor: pointer;
+    transition: background-color 0.2s;
   }
 
   button:hover {
-    background: var(--btn-primary-hover);
+    background-color: var(--btn-primary-hover, #2563eb);
   }
 </style>
