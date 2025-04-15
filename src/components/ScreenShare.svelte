@@ -202,16 +202,6 @@
 </script>
 
 <div class="screen-share-container">
-    <!-- Welcome Header -->
-    <div class="screen-share-header">
-        <h1 class="screen-share-title">
-            Welcome to AI Screen Sharing Assistant
-        </h1>
-        <p class="screen-share-subtitle">
-            Share your screen and talk to me
-        </p>
-    </div>
-
     <!-- Screen Preview -->
     <div class="video-container">
         <div class="video-wrapper">
