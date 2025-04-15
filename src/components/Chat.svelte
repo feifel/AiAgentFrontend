@@ -1,16 +1,8 @@
 <script lang="ts">
-  import { writable } from 'svelte/store';
   import AudioPlayer from './AudioPlayer.svelte';
   import type { WebSocketStore, WebSocketMessage } from '../stores/websocket';
   import { getContext } from 'svelte';
 
-  /*
-  export const websocket = writable<{
-    lastMessage: ChatHistoryMessage | null;
-  }>({
-    lastMessage: null,
-  });
-  */
   const wsStore = getContext('websocket') as WebSocketStore;
   let messageInput = '';
   let messages: WebSocketMessage[] = [];

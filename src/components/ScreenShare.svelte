@@ -71,7 +71,7 @@
                     noiseSuppression: true,
                     autoGainControl: true,
                     channelCount: 1,
-                    sampleRate: 16000
+                    sampleRate: 24000
                 }
             });
             console.log('Audio stream obtained successfully with settings:', {
@@ -81,7 +81,7 @@
 
             // Set up audio context and processing
             audioContext = new AudioContext({
-                sampleRate: 16000,
+                sampleRate: 24000,
                 latencyHint: 'interactive'
             });
 
@@ -94,7 +94,7 @@
                 numberOfInputs: 1,
                 numberOfOutputs: 1,
                 processorOptions: {
-                    sampleRate: 16000,
+                    sampleRate: 24000,
                     bufferSize: 4096,
                 },
                 channelCount: 1,
@@ -109,9 +109,7 @@
                 audioStats = stats;
                 
                 if (pcmData) {
-                    console.log('Audio stats:', stats);
                     const base64Data = Base64.fromUint8Array(new Uint8Array(pcmData));
-                    console.log('Sending audio data over WebSocket, base64 length:', base64Data.length);
                     wsStore.sendMediaChunk({
                         mime_type: "audio/pcm",
                         data: base64Data
