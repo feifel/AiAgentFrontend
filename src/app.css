@@ -190,11 +190,10 @@ button:focus-visible {
 }
 
 .audio-level {
-  position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 5px;
   background-color: var(--audio-level-bg, #333333);
   border-radius: 2px;
 }
@@ -246,7 +245,7 @@ button:focus-visible {
 .chat-container {
   width: 100%;
   max-width: 640px;
-  margin: 2rem auto 0;
+  margin: 0rem auto 0;
   padding: 1.5rem;
   border-radius: 0.5rem;
   background-color: var(--container-bg, #2a2a2a);

@@ -3,7 +3,7 @@
     import { getContext } from 'svelte';
     import { Base64 } from 'js-base64';
     import type { WebSocketStore } from '../stores/websocket';
-    import AudioPlayer from './AudioPlayer.svelte';
+    import { receivedAudioData, audioLevel } from '../stores/audio';
     import Chat from './Chat.svelte';
 
     interface ChatMessage {
@@ -19,7 +19,6 @@
 
     const wsStore = getContext('websocket') as WebSocketStore;
     let isSharing = false;
-    let audioLevel = 0;
     let playbackAudioLevel = 0;
     let videoRef: HTMLVideoElement;
     let audioContext: AudioContext | null = null;
@@ -27,10 +26,8 @@
     let audioWorkletNode: AudioWorkletNode | null = null;
     let captureInterval: ReturnType<typeof setInterval>;
     let isConnected = false;
-    let receivedAudioData: string | null = null;
     let lastMessageTime = 0;
     let audioStats: AudioStats | null = null;
-    let showDiagnostics = false;
     
     let messages: ChatMessage[] = [{
         text: "Screen sharing session started. I'll transcribe what I see.",
@@ -45,7 +42,7 @@
             lastMessageTime = Date.now();            
             if (state.lastMessage.mime_type === 'audio/pcm' && state.lastMessage.sender === 'ai') {
                 console.log('Received audio data...');
-                receivedAudioData = state.lastMessage.data;
+                receivedAudioData.set(state.lastMessage.data);
             }
         }
     });
@@ -104,7 +101,7 @@
             // Set up audio processing
             audioWorkletNode.port.onmessage = (event) => {
                 const { pcmData, level, stats } = event.data;
-                audioLevel = level;
+                audioLevel.set(level);
                 audioStats = stats;
                 
                 if (pcmData) {
@@ -113,7 +110,8 @@
                         timestamp: Date.now(),
                         sender: 'user',
                         mime_type: 'audio/pcm',
-                        data: base64Data
+                        data: base64Data,
+                        audioLevel: level
                     });
                 }
             };
@@ -193,7 +191,7 @@
         }
 
         isSharing = false;
-        audioLevel = 0;
+        audioLevel.set(0);
     }
 
     onDestroy(() => {
@@ -212,15 +210,6 @@
                 muted
                 class="video-preview"
             ></video>
-            <!-- Combined Audio Level Indicator -->
-            {#if isSharing}
-                <div class="audio-level">
-                    <div 
-                        class="audio-level-indicator" 
-                        style="width: {Math.max(audioLevel, playbackAudioLevel)}%"
-                    ></div>
-                </div>
-            {/if}
             
             {#if !isSharing}
                 <button 
@@ -240,68 +229,6 @@
             {/if}
         </div>
     </div>
-
-    <!-- Audio Playback -->
-    {#if receivedAudioData}
-        <div class="audio-playback">
-            <h3>Received Audio</h3>
-            <AudioPlayer base64Audio={receivedAudioData} />
-        </div>
-    {/if}
-
-    <!-- Audio Diagnostics -->
-    <div class="diagnostics-container">
-        <button class="btn btn-primary" on:click={() => showDiagnostics = !showDiagnostics}>
-            {showDiagnostics ? 'Hide' : 'Show'} Audio Diagnostics
-        </button>
-        
-        {#if showDiagnostics && audioStats}
-            <div class="diagnostics-panel">
-                <h3>Audio Diagnostics</h3>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <label for="rms-level">RMS Level:</label>
-                        <span id="rms-level">{(audioStats.rms * 100).toFixed(2)}%</span>
-                    </div>
-                    <div class="stat-item">
-                        <label for="max-amplitude">Max Amplitude:</label>
-                        <span id="max-amplitude">{(audioStats.maxAmplitude * 100).toFixed(2)}%</span>
-                    </div>
-                    <div class="stat-item">
-                        <label for="buffer-size">Buffer Size:</label>
-                        <span id="buffer-size">{audioStats.bufferSize} samples</span>
-                    </div>
-                    <div class="stat-item">
-                        <label for="audio-level">Audio Level:</label>
-                        <span id="audio-level">{audioLevel.toFixed(2)}%</span>
-                    </div>
-                </div>
-            </div>
-        {/if}
-    </div>
-    <Chat/>
-    <!-- Chat History 
-    
-    <div class="chat-container">
-        <div class="chat-header">
-            <h2>Chat History</h2>
-        </div>
-        <div class="chat-history">
-            <div>
-                {#each messages as message}
-                    <div class="chat-message">
-                        <div class="avatar">
-                            <span>AI</span>
-                        </div>
-                        <div class="message-content">
-                            <p class="message-text">{message.text}</p>
-                            <p class="message-timestamp">{message.timestamp}</p>
-                        </div>
-                    </div>
-                {/each}
-            </div>
-        </div>
-    </div>-->
 </div>
 <style>
 :global(body) {
@@ -309,59 +236,5 @@
     font-family: system-ui, sans-serif;
     background-color: #1a1a1a;
     color: #ffffff;
-}
-
-.audio-playback {
-    max-width: 640px;
-    margin: 2rem auto 0;
-    padding: 1.5rem;
-    background-color: var(--container-bg, #2a2a2a);
-    border-radius: 0.5rem;
-}
-
-.audio-playback h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1rem;
-    color: var(--text-color, #ffffff);
-}
-
-.diagnostics-container {
-    max-width: 640px;
-    margin: 2rem auto 0;
-    padding: 1.5rem;
-    background-color: var(--container-bg, #2a2a2a);
-    border-radius: 0.5rem;
-}
-
-.diagnostics-panel {
-    margin-top: 1rem;
-    padding: 1rem;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 0.375rem;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 0.5rem;
-}
-
-.stat-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem;
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 0.25rem;
-}
-
-.stat-item label {
-    color: var(--text-secondary);
-}
-
-.stat-item span {
-    font-family: monospace;
-    color: var(--text-color);
 }
 </style>

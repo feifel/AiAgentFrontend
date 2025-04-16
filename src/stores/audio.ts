@@ -1,31 +1,32 @@
-<script lang="ts">
-  import { onDestroy } from "svelte";
+import { writable } from 'svelte/store';
 
-  export let base64Audio: string;
-  let audioElement: HTMLAudioElement;
-  let audioContext: AudioContext | null = null;
-  let audioBufferQueue: ArrayBuffer[] = [];
-  let isPlaying = false;
+export const receivedAudioData = writable<string | null>(null);
+export const audioLevel = writable<number>(0);
 
-  async function initAudioContext() {
-    if (!audioContext) {
-      audioContext = new AudioContext({
+class AudioPlayerManager {
+  private audioContext: AudioContext | null = null;
+  private audioBufferQueue: ArrayBuffer[] = [];
+  private isPlaying = false;
+
+  private async initAudioContext() {
+    if (!this.audioContext) {
+      this.audioContext = new AudioContext({
         sampleRate: 24000, // Match the server's sample rate
       });
     }
-    return audioContext;
+    return this.audioContext;
   }
 
-  async function playAudioChunk(audioBuffers: ArrayBuffer[]): Promise<void> {
+  private async playAudioChunk(audioBuffers: ArrayBuffer[]): Promise<void> {
     return new Promise(async (resolve, reject) => {
       try {
-        const ctx = await initAudioContext();
+        const ctx = await this.initAudioContext();
         
         const totalLength = audioBuffers.reduce((acc, buffer) => 
           acc + new Int16Array(buffer).length, 0);
         
         if (totalLength === 0) {
-          isPlaying = false;  // Make sure to reset playing state
+          this.isPlaying = false;
           return resolve();
         }
         
@@ -52,66 +53,55 @@
 
         source.onended = () => {
           source.disconnect();
-          isPlaying = false;  // Reset playing state when finished
+          this.isPlaying = false;
           resolve();
           // Check for more chunks after this one finishes
-          if (audioBufferQueue.length > 0) {
-            setTimeout(() => processAudioQueue(), 0);
+          if (this.audioBufferQueue.length > 0) {
+            setTimeout(() => this.processAudioQueue(), 0);
           }
         };
 
         source.start();
       } catch (error) {
-        isPlaying = false;  // Reset playing state on error
+        this.isPlaying = false;
         reject(error);
       }
     });
   }
 
-  async function processAudioQueue() {
-    if (isPlaying || audioBufferQueue.length === 0) {
+  private async processAudioQueue() {
+    if (this.isPlaying || this.audioBufferQueue.length === 0) {
       return;
     }
     
-    isPlaying = true;
+    this.isPlaying = true;
     
     try {
-      // Take only the next chunk to play
-      const nextChunk = [audioBufferQueue.shift()!];
-      await playAudioChunk(nextChunk);
+      const nextChunk = [this.audioBufferQueue.shift()!];
+      await this.playAudioChunk(nextChunk);
     } catch (error) {
       console.error("Audio playback error:", error);
-      isPlaying = false;
+      this.isPlaying = false;
     }
   }
 
-  $: if (base64Audio) {
-    console.log("Received new audio chunk, queue length:", audioBufferQueue.length);
-    // Convert base64 to audio buffer
+  public processBase64Audio(base64Audio: string) {
     const byteCharacters = atob(base64Audio);
     const byteArray = new Uint8Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
       byteArray[i] = byteCharacters.charCodeAt(i);
     }
     
-    // Add to queue and process
-    audioBufferQueue.push(byteArray.buffer);
-    processAudioQueue();
+    this.audioBufferQueue.push(byteArray.buffer);
+    this.processAudioQueue();
   }
 
-  onDestroy(() => {
-    if (audioContext) {
-      audioContext.close();
+  public dispose() {
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
     }
-  });
-</script>
-
-<div class="audio-controls">
-  <!-- We don't need the audio element anymore as we're using Web Audio API -->
-</div>
-
-<style>
-  .audio-controls {
-    min-height: 54px; /* Preserve layout space */
   }
-</style>
+}
+
+export const audioPlayer = new AudioPlayerManager();

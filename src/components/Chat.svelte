@@ -1,7 +1,8 @@
 <script lang="ts">
-  import AudioPlayer from './AudioPlayer.svelte';
+  import ScreenShare from './ScreenShare.svelte';
   import type { WebSocketStore, WebSocketMessage, WebSocketState } from '../stores/websocket';
   import { getContext } from 'svelte';
+  import { screenEnabled } from '../stores/screen';
 
   const wsStore = getContext('websocket') as WebSocketStore;
   let messageInput = '';
@@ -42,44 +43,47 @@
   });
 </script>
 
-<div class="chat-container" bind:this={chatContainer}>
-  <div class="messages">
-    {#each messages as message (message.id)}
-      <div class="message {message.sender}">
-        <div class="avatar">
-          {#if message.sender === 'ai'}
-            <span>AI</span>
-          {:else}
-            <span>ME</span>
-          {/if}
+<div class="chat-wrapper">
+  <div class="chat-container" bind:this={chatContainer}>
+    <div class="messages">
+      {#each messages as message (message.id)}
+        <div class="message {message.sender}">
+          <div class="avatar">
+            {#if message.sender === 'ai'}
+              <span>AI</span>
+            {:else}
+              <span>ME</span>
+            {/if}
+          </div>
+          <div class="content">
+            {#if message.mime_type === 'text/plain'}
+              <p class="content-text">{message.data}</p>
+            {/if}
+            <span class="timestamp">{new Date(message.timestamp).toLocaleString()}</span>
+          </div>
         </div>
-        <div class="content">
-          {#if message.mime_type === 'text/plain'}
-            <p class="content-text">{message.data}</p>
-          {:else if message.mime_type === 'audio/pcm' && message.data}
-            <AudioPlayer base64Audio={message.data} />
-          {/if}
-          <span class="timestamp">{new Date(message.timestamp).toLocaleString()}</span>
-        </div>
-      </div>
-    {/each}
+      {/each}
+    </div>
   </div>
-  
-  <form on:submit|preventDefault={handleSubmit}>
-    <input
-      type="text"
-      bind:value={messageInput}
-      placeholder="Type a message..."
-    />
-    <button type="submit">Send</button>
-  </form>
+
+  {#if $screenEnabled}
+    <div class="screen-share-overlay">
+      <ScreenShare />
+    </div>
+  {/if}
 </div>
 
 <style>
+  .chat-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
   .chat-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 80%;
     background-color: var(--container-bg, #2a2a2a);
     border-radius: 0.5rem;
     overflow: hidden;
@@ -156,32 +160,12 @@
     text-align: right;
   }
 
-  form {
-    display: flex;
-    gap: 0.5rem;
-    padding: 1rem;
-    border-top: 1px solid var(--border-color, rgba(229, 231, 235, 0.1));
-  }
-
-  input {
-    flex: 1;
-    padding: 0.5rem;
-    border-radius: 0.375rem;
-    background-color: var(--message-bg, rgba(255, 255, 255, 0.05));
-    border: 1px solid var(--border-color, rgba(229, 231, 235, 0.1));
-    color: var(--text-color, #ffffff);
-  }
-
-  button {
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    background-color: var(--btn-primary-bg, #3b82f6);
-    color: white;
-    font-weight: 500;
-    transition: background-color 0.2s;
-  }
-
-  button:hover {
-    background-color: var(--btn-primary-hover, #2563eb);
+  .screen-share-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
   }
 </style>

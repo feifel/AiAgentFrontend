@@ -1,6 +1,6 @@
 <script lang="ts">
   import WebSocketProvider from './components/WebSocketProvider.svelte';
-  import ScreenShare from './components/ScreenShare.svelte';
+  import Chat from './components/Chat.svelte';
   import Toolbar from './components/Toolbar.svelte';
 </script>
 
@@ -10,7 +10,7 @@
       <h1 class="title">AI Agent</h1>
     </header>
     <main class="main-content">
-      <ScreenShare />
+      <Chat />
     </main>
     <footer class="footer">
       <Toolbar />
@@ -43,7 +43,6 @@
   .main-content {
     flex: 1 1 auto;
     overflow-y: auto;
-    padding: 1rem 0 0 0;
   }
   .footer {
     flex: 0 0 auto;
