@@ -10,21 +10,14 @@ export interface WebSocketState {
 export interface WebSocketMessage {
   timestamp: number;
   sender: 'ai' | 'user';
-  type: 'text' | 'audio' | 'interrupt';
-  data: string;
-}
-
-interface MediaChunk {
-  mime_type: string;
+  mime_type: 'text/plain' | 'audio/pcm' | 'application/interrupt' | 'image/jpeg';
   data: string;
 }
 
 export interface WebSocketStore {
   subscribe: any;
-  sendMessage: (message: any) => void;
-  sendMediaChunk: (chunk: MediaChunk) => void;
+  sendMessage: (message: WebSocketMessage | any) => void;
   ws: WebSocket | null;
-  lastMessage: WebSocketMessage | null;
 }
 
 export function createWebSocketStore(url: string): WebSocketStore {
@@ -89,8 +82,11 @@ export function createWebSocketStore(url: string): WebSocketStore {
 
       ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
-          update(state => ({ ...state, lastMessage: data }));
+          const msg = JSON.parse(event.data);
+          // remove the data property from the message for logging
+          const { data, ...msgWithoutData } = msg;
+          console.log('Received WebSocket message for propagation:', msgWithoutData);
+          update(state => ({ ...state, lastMessage: msg }));
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
         }
@@ -118,23 +114,11 @@ export function createWebSocketStore(url: string): WebSocketStore {
     }, backoffTime);
   }
 
-  function sendMessage(message: any) {
+  function sendMessage(message: WebSocketMessage | any) {
     if (ws?.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(message));
     } else {
       console.warn('WebSocket is not connected, message not sent');
-    }
-  }
-
-  function sendMediaChunk(chunk: MediaChunk) {
-    if (ws?.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        realtime_input: {
-          media_chunks: [chunk]
-        }
-      }));
-    } else {
-      console.warn('WebSocket is not connected, media chunk not sent');
     }
   }
 
@@ -144,8 +128,6 @@ export function createWebSocketStore(url: string): WebSocketStore {
   return {
     subscribe,
     sendMessage,
-    sendMediaChunk,
-    ws,
-    lastMessage: null
+    ws
   };
 }

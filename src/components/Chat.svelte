@@ -1,39 +1,50 @@
 <script lang="ts">
   import AudioPlayer from './AudioPlayer.svelte';
-  import type { WebSocketStore, WebSocketMessage } from '../stores/websocket';
+  import type { WebSocketStore, WebSocketMessage, WebSocketState } from '../stores/websocket';
   import { getContext } from 'svelte';
 
   const wsStore = getContext('websocket') as WebSocketStore;
   let messageInput = '';
-  let messages: WebSocketMessage[] = [];
+  let messages: (WebSocketMessage & { id: number })[] = [];
+  let messageIdCounter = 0;
   let chatContainer: HTMLDivElement;
+  let lastMessageTimestamp = 0;
 
   function handleSubmit() {
     if (messageInput.trim()) {
-      wsStore.sendMessage({ type: "text", data: { text: messageInput, audio: null, sender: 'user' }, timestamp: Date.now() });
+      const message = { 
+        mime_type: "text/plain", 
+        data: messageInput, 
+        sender: 'user', 
+        timestamp: Date.now(),
+        id: messageIdCounter++
+      };
+      wsStore.sendMessage(message);
       messageInput = '';
     }
   }
 
-  // Subscribe to websocket store to handle incoming messages
-  $: if (wsStore.lastMessage) {
-    const message = {
-      ...wsStore.lastMessage,
-      timestamp: Date.now()
-    };
-    messages = [...messages, message];
-    // Scroll to bottom after message added
-    setTimeout(() => {
-      if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
-    }, 0);
-  }
+  // Subscribe to store changes
+  wsStore.subscribe((state: { ws: WebSocket | null; lastMessage: any }) => {
+    if (state.lastMessage && state.lastMessage.mime_type === "text/plain") {
+      console.log('New message detected:', state.lastMessage);
+      lastMessageTimestamp = state.lastMessage.timestamp;
+      const messageWithId = { ...state.lastMessage, id: messageIdCounter++ };
+      messages = [...messages, messageWithId];
+      console.log('we have now the following number of messages:' + messages.length);
+      // Scroll to bottom after message added
+      setTimeout(() => {
+        if (chatContainer) {
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+      }, 0);
+    }
+  });
 </script>
 
 <div class="chat-container" bind:this={chatContainer}>
   <div class="messages">
-    {#each messages as message (message.timestamp)}
+    {#each messages as message (message.id)}
       <div class="message {message.sender === 'ai' ? 'assistant' : 'user'}">
         <div class="avatar">
           {#if message.sender === 'ai'}
@@ -43,9 +54,9 @@
           {/if}
         </div>
         <div class="content">
-          {#if message.type === 'text'}
+          {#if message.mime_type === 'text/plain'}
             <p>{message.data}</p>
-          {:else if message.type === 'audio' && message.data}
+          {:else if message.mime_type === 'audio/pcm' && message.data}
             <AudioPlayer base64Audio={message.data} />
           {/if}
           <span class="timestamp">{new Date(message.timestamp).toLocaleTimeString()}</span>

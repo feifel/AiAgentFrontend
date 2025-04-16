@@ -4,6 +4,7 @@
     import { Base64 } from 'js-base64';
     import type { WebSocketStore } from '../stores/websocket';
     import AudioPlayer from './AudioPlayer.svelte';
+    import Chat from './Chat.svelte';
 
     interface ChatMessage {
         text: string;
@@ -41,12 +42,10 @@
         
         // Handle incoming WebSocket messages
         if (state.lastMessage && Date.now() - lastMessageTime > 100) { // Debounce messages
-            lastMessageTime = Date.now();
-            console.log('Received WebSocket message:', state.lastMessage);
-            
-            if (state.lastMessage.audio) {
-                console.log('Received audio data from message');
-                receivedAudioData = state.lastMessage.audio;
+            lastMessageTime = Date.now();            
+            if (state.lastMessage.mime_type === 'audio/pcm' && state.lastMessage.sender === 'ai') {
+                console.log('Received audio data...');
+                receivedAudioData = state.lastMessage.data;
             }
         }
     });
@@ -110,8 +109,10 @@
                 
                 if (pcmData) {
                     const base64Data = Base64.fromUint8Array(new Uint8Array(pcmData));
-                    wsStore.sendMediaChunk({
-                        mime_type: "audio/pcm",
+                    wsStore.sendMessage({
+                        timestamp: Date.now(),
+                        sender: 'user',
+                        mime_type: 'audio/pcm',
                         data: base64Data
                     });
                 }
@@ -137,9 +138,10 @@
                         if (ctx) {
                             ctx.drawImage(videoRef, 0, 0);
                             const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-                            console.log('Sending screen capture over WebSocket, base64 length:', imageData.length);
-                            wsStore.sendMediaChunk({
-                                mime_type: "image/jpeg",
+                            wsStore.sendMessage({
+                                timestamp: Date.now(),
+                                sender: 'user',
+                                mime_type: 'image/jpeg',
                                 data: imageData
                             });
                         }
@@ -277,8 +279,9 @@
             </div>
         {/if}
     </div>
-
-    <!-- Chat History -->
+    <Chat/>
+    <!-- Chat History 
+    
     <div class="chat-container">
         <div class="chat-header">
             <h2>Chat History</h2>
@@ -298,7 +301,7 @@
                 {/each}
             </div>
         </div>
-    </div>
+    </div>-->
 </div>
 <style>
 :global(body) {
