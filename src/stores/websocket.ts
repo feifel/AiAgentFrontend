@@ -86,6 +86,8 @@ export function createWebSocketStore(url: string): WebSocketStore {
           // remove the data property from the message for logging
           const { data, ...msgWithoutData } = msg;
           console.log('Received WebSocket message for propagation:', msgWithoutData);
+          // Update the timestamp to current date time
+          msg.timestamp = Date.now();
           update(state => ({ ...state, lastMessage: msg }));
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);

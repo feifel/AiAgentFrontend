@@ -45,21 +45,21 @@
 <div class="chat-container" bind:this={chatContainer}>
   <div class="messages">
     {#each messages as message (message.id)}
-      <div class="message {message.sender === 'ai' ? 'assistant' : 'user'}">
+      <div class="message {message.sender}">
         <div class="avatar">
           {#if message.sender === 'ai'}
             <span>AI</span>
           {:else}
-            <span>U</span>
+            <span>ME</span>
           {/if}
         </div>
         <div class="content">
           {#if message.mime_type === 'text/plain'}
-            <p>{message.data}</p>
+            <p class="content-text">{message.data}</p>
           {:else if message.mime_type === 'audio/pcm' && message.data}
             <AudioPlayer base64Audio={message.data} />
           {/if}
-          <span class="timestamp">{new Date(message.timestamp).toLocaleTimeString()}</span>
+          <span class="timestamp">{new Date(message.timestamp).toLocaleString()}</span>
         </div>
       </div>
     {/each}
@@ -88,10 +88,10 @@
   .messages {
     flex: 1;
     overflow-y: auto;
-    padding: 1rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    padding-bottom: 1rem;
   }
 
   .message {
@@ -111,19 +111,31 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--avatar-bg, #3b82f6);
     color: white;
     font-size: 0.75rem;
     font-weight: 500;
+  }
+
+  .ai .avatar {
+    background-color: #353535;
+  }
+
+  .user .avatar {
+    background-color: #3b82f6;
   }
 
   .content {
     background-color: var(--message-bg, rgba(255, 255, 255, 0.05));
     padding: 0.75rem;
     border-radius: 0.5rem;
-    max-width: 70%;
+    max-width: 70%;    
+    text-align: left;
   }
 
+  .content-text {
+    margin-top: 0px;
+    margin-bottom: 0px;
+  }
   .user .content {
     background-color: var(--btn-primary-bg, #3b82f6);
     color: white;
@@ -131,9 +143,17 @@
 
   .timestamp {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.5rem;
     color: var(--text-secondary, rgba(229, 231, 235, 0.6));
     margin-top: 0.25rem;
+  }
+
+  .ai .timestamp {
+    text-align: left;
+  }
+
+  .user .timestamp {
+    text-align: right;
   }
 
   form {
