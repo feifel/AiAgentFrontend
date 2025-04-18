@@ -1,11 +1,11 @@
 <script lang="ts">
   import avatarIcon from '../assets/avatar.png';
-  import { getContext, onDestroy } from 'svelte';
-  import type { WebSocketStore } from '../stores/websocket';
+  import type { WebSocketService } from '../services/websocket';
   import { screenEnabled } from '../stores/screen';
-  import { receivedAudioData, audioLevel, audioPlayer } from '../stores/audio';
+  import { receivedAudioData, audioLevel } from '../stores/audio';
+  import { audioPlayer } from '../services/audioplayer';
 
-  const wsStore = getContext('websocket') as WebSocketStore;
+  export let wsHandler: WebSocketService;
 
   const languages = [
     { code: 'en', name: 'English' },
@@ -29,7 +29,7 @@
 
   function handleSendMessage() {
     if (terminalText.trim()) {
-      wsStore.sendMessage({
+      wsHandler.sendMessage({
         mime_type: "text/plain",
         data: terminalText,
         sender: 'user',
@@ -39,20 +39,14 @@
     }
   }
 
-  // Subscribe to ScreenShare's audio level and process audio data
-  const unsubscribe = wsStore.subscribe((state: { ws: WebSocket | null; lastMessage: any }) => {
-    if (state.lastMessage?.audioLevel) {
-      audioLevel.set(state.lastMessage.audioLevel);
-    }
-  });
+  // Watch for audio level from messages
+  $: if (wsHandler?.lastMessage?.audioLevel) {
+    audioLevel.set(wsHandler.lastMessage.audioLevel);
+  }
 
   $: if ($receivedAudioData) {
     audioPlayer.processBase64Audio($receivedAudioData);
   }
-
-  onDestroy(() => {
-    unsubscribe();
-  });
 </script>
 
 <div class="toolbar-container">

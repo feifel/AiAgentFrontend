@@ -1,10 +1,11 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte';
-    import { getContext } from 'svelte';
+    import { onDestroy } from 'svelte';
     import { Base64 } from 'js-base64';
-    import type { WebSocketStore } from '../stores/websocket';
-    import { receivedAudioData, audioLevel } from '../stores/audio';
-    import Chat from './Chat.svelte';
+    import type { WebSocketService } from '../services/websocket';
+    import { webSocketMessage } from '../stores/websocket';
+    import { audioLevel, receivedAudioData} from '../stores/audio';
+
+    export let wsHandler: WebSocketService;
 
     interface ChatMessage {
         text: string;
@@ -17,7 +18,6 @@
         bufferSize: number;
     }
 
-    const wsStore = getContext('websocket') as WebSocketStore;
     let isSharing = false;
     let playbackAudioLevel = 0;
     let videoRef: HTMLVideoElement;
@@ -25,8 +25,6 @@
     let audioStream: MediaStream | null = null;
     let audioWorkletNode: AudioWorkletNode | null = null;
     let captureInterval: ReturnType<typeof setInterval>;
-    let isConnected = false;
-    let lastMessageTime = 0;
     let audioStats: AudioStats | null = null;
     
     let messages: ChatMessage[] = [{
@@ -34,18 +32,14 @@
         timestamp: new Date().toLocaleTimeString()
     }];
 
-    wsStore.subscribe((state: { ws: WebSocket | null; lastMessage: any }) => {
-        isConnected = state.ws !== null;
-        
-        // Handle incoming WebSocket messages
-        if (state.lastMessage && Date.now() - lastMessageTime > 100) { // Debounce messages
-            lastMessageTime = Date.now();            
-            if (state.lastMessage.mime_type === 'audio/pcm' && state.lastMessage.sender === 'ai') {
-                console.log('Received audio data...');
-                receivedAudioData.set(state.lastMessage.data);
-            }
+    $: if ($webSocketMessage) {
+        console.log('Check if received message is audio data...');
+        // Handle incoming Audio data      
+        if ($webSocketMessage.mime_type === 'audio/pcm' && $webSocketMessage.sender === 'ai') {
+            console.log('Received audio data...');
+            receivedAudioData.set($webSocketMessage.data);
         }
-    });
+    };
 
     async function startSharing() {
         if (isSharing) return;
@@ -53,14 +47,12 @@
         try {
             console.log('Starting screen and audio sharing...');
             
-            // Get screen stream
             const screenStream = await navigator.mediaDevices.getDisplayMedia({
                 video: true,
                 audio: false
             });
             console.log('Screen stream obtained successfully');
             
-            // Get audio stream
             const audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     echoCancellation: true,
@@ -75,7 +67,6 @@
                 sampleRate: audioStream.getAudioTracks()[0].getSettings().sampleRate
             });
 
-            // Set up audio context and processing
             audioContext = new AudioContext({
                 sampleRate: 24000,
                 latencyHint: 'interactive'
@@ -98,7 +89,6 @@
                 channelInterpretation: 'speakers'
             });
 
-            // Set up audio processing
             audioWorkletNode.port.onmessage = (event) => {
                 const { pcmData, level, stats } = event.data;
                 audioLevel.set(level);
@@ -106,7 +96,7 @@
                 
                 if (pcmData) {
                     const base64Data = Base64.fromUint8Array(new Uint8Array(pcmData));
-                    wsStore.sendMessage({
+                    wsHandler.sendMessage({
                         timestamp: Date.now(),
                         sender: 'user',
                         mime_type: 'audio/pcm',
@@ -119,12 +109,10 @@
             source.connect(audioWorkletNode);
             console.log('Audio processing pipeline connected');
 
-            // Set up video stream
             if (videoRef) {
                 videoRef.srcObject = screenStream;
                 console.log('Video stream connected to video element');
                 
-                // Start screen capture interval
                 captureInterval = setInterval(() => {
                     if (videoRef) {
                         console.log('Capturing screen frame...');
@@ -136,7 +124,7 @@
                         if (ctx) {
                             ctx.drawImage(videoRef, 0, 0);
                             const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-                            wsStore.sendMessage({
+                            wsHandler.sendMessage({
                                 timestamp: Date.now(),
                                 sender: 'user',
                                 mime_type: 'image/jpeg',
@@ -147,9 +135,7 @@
                 }, 3000);
             }
 
-            // Send initial setup message
-            console.log('Sending initial setup message');
-            wsStore.sendMessage({
+            wsHandler.sendMessage({
                 setup: {}
             });
 
@@ -162,25 +148,21 @@
     }
 
     function stopSharing() {
-        // Stop video stream
         if (videoRef?.srcObject) {
             const stream = videoRef.srcObject as MediaStream;
             stream.getTracks().forEach(track => track.stop());
             videoRef.srcObject = null;
         }
 
-        // Stop audio stream
         if (audioStream) {
             audioStream.getTracks().forEach(track => track.stop());
             audioStream = null;
         }
 
-        // Stop screen capture interval
         if (captureInterval) {
             clearInterval(captureInterval);
         }
 
-        // Clean up audio processing
         if (audioWorkletNode) {
             audioWorkletNode.disconnect();
             audioWorkletNode = null;
@@ -200,7 +182,6 @@
 </script>
 
 <div class="screen-share-container">
-    <!-- Screen Preview -->
     <div class="video-container">
         <div class="video-wrapper">
             <video
@@ -213,11 +194,11 @@
             
             {#if !isSharing}
                 <button 
-                    class="btn {isConnected ? 'btn-primary' : 'btn-disabled'}"
+                    class="btn {wsHandler.isConnected ? 'btn-primary' : 'btn-disabled'}"
                     on:click={startSharing}
-                    disabled={!isConnected}
+                    disabled={!wsHandler.isConnected}
                 >
-                    {isConnected ? "Start Screen Share" : "Connecting to server..."}
+                    {wsHandler.isConnected ? "Start Screen Share" : "Connecting to server..."}
                 </button>
             {:else}
                 <button 

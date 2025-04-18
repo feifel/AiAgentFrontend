@@ -1,15 +1,17 @@
 <script lang="ts">
   import ScreenShare from './ScreenShare.svelte';
-  import type { WebSocketStore, WebSocketMessage, WebSocketState } from '../stores/websocket';
-  import { getContext } from 'svelte';
+  import type { WebSocketMessage } from '../types/websocket';
   import { screenEnabled } from '../stores/screen';
+  import type { WebSocketService } from '../services/websocket';
+  import { webSocketMessage } from '../stores/websocket';
 
-  const wsStore = getContext('websocket') as WebSocketStore;
+  export let wsHandler: WebSocketService;
   let messageInput = '';
   let messages: (WebSocketMessage & { id: number })[] = [];
   let messageIdCounter = 0;
   let chatContainer: HTMLDivElement;
-  let lastMessageTimestamp = 0;
+  let lastMessageTimestamp: number = new Date().getTime();
+  let unsubscribeEffect: () => void;
 
   function handleSubmit() {
     if (messageInput.trim()) {
@@ -20,17 +22,18 @@
         timestamp: Date.now(),
         id: messageIdCounter++
       };
-      wsStore.sendMessage(message);
+      wsHandler.sendMessage(message);
       messageInput = '';
     }
   }
 
-  // Subscribe to store changes
-  wsStore.subscribe((state: { ws: WebSocket | null; lastMessage: any }) => {
-    if (state.lastMessage && state.lastMessage.mime_type === "text/plain") {
-      console.log('New message detected:', state.lastMessage);
-      lastMessageTimestamp = state.lastMessage.timestamp;
-      const messageWithId = { ...state.lastMessage, id: messageIdCounter++ };
+  // Watch for new messages
+  $: if ($webSocketMessage && $webSocketMessage.timestamp != lastMessageTimestamp) {
+    console.log('Check if received message is text message...');
+    if ($webSocketMessage.mime_type === "text/plain") {
+      console.log('New text message received:', $webSocketMessage);
+      lastMessageTimestamp = $webSocketMessage.timestamp;
+      const messageWithId = { ...$webSocketMessage, id: messageIdCounter++ };
       messages = [...messages, messageWithId];
       console.log('we have now the following number of messages:' + messages.length);
       // Scroll to bottom after message added
@@ -40,7 +43,7 @@
         }
       }, 0);
     }
-  });
+  }
 </script>
 
 <div class="chat-wrapper">
@@ -68,7 +71,7 @@
 
   {#if $screenEnabled}
     <div class="screen-share-overlay">
-      <ScreenShare />
+      <ScreenShare {wsHandler} />
     </div>
   {/if}
 </div>

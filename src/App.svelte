@@ -1,22 +1,31 @@
 <script lang="ts">
-  import WebSocketProvider from './components/WebSocketProvider.svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { WebSocketService } from './services/websocket';
   import Chat from './components/Chat.svelte';
   import Toolbar from './components/Toolbar.svelte';
+
+  let wsHandler: WebSocketService;
+
+  onMount(() => {
+    wsHandler = new WebSocketService('ws://localhost:9073');
+  });
+
+  onDestroy(() => {
+    wsHandler?.dispose();
+  });
 </script>
 
-<WebSocketProvider url="ws://localhost:9073">
-  <div class="layout">
-    <header class="header">
-      <h1 class="title">AI Agent</h1>
-    </header>
-    <main class="main-content">
-      <Chat />
-    </main>
-    <footer class="footer">
-      <Toolbar />
-    </footer>
-  </div>
-</WebSocketProvider>
+<div class="layout">
+  <header class="header">
+    <h1 class="title">AI Agent</h1>
+  </header>
+  <main class="main-content">
+    <Chat {wsHandler} />
+  </main>
+  <footer class="footer">
+    <Toolbar {wsHandler} />
+  </footer>
+</div>
 
 <style>
   .layout {

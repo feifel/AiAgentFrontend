@@ -44,6 +44,7 @@ This is the Frontend for my AI Agent Backend (see other project). You can talk a
 This project was heavily inspired by https://github.com/yeyu2/multimodal-client-vite
 
 ## Roadmap
+1. Refactor WebSocketMessages to be ready for new usecase STT (Speach To Text) and attachment processing (e.g. PDF)
 1. Implement a proper chat history
 2. Add a toolbar in a separate Svelte 5 app 
     1. Add a dropdown list to select the LLM (gemma-3, Qwen2.5, llama, etc.)
@@ -55,3 +56,7 @@ This project was heavily inspired by https://github.com/yeyu2/multimodal-client-
         1. Headset, to select audio input (shows the current audio level in a bar below the toolbar)
         2. Keyboard, to select keyboard input (shows a text area with a send button)
         3. Paperclip, to attach files
+    5. Add a cancel button, to stop the audio output/playback
+3. Implement a text area, so that the user can send text messages to the LLM
+    1. Implement a Send Button
+    2. Implement a Microphone to add some text via Audio first
