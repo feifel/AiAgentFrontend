@@ -15,7 +15,7 @@
   let messageInput = '';
   let messages: ChatMessage[] = [];
   let messageIdCounter = 0;
-  let chatContainer: HTMLDivElement;
+  let chatMessages: HTMLDivElement;
   let lastMessageTimestamp: number|undefined = new Date().getTime();
 
   // Watch for new messages
@@ -36,34 +36,30 @@
       console.log('we have now the following number of messages:' + messages.length);
       // Scroll to bottom after message added
       setTimeout(() => {
-        if (chatContainer) {
-          chatContainer.scrollTop = chatContainer.scrollHeight;
+        if (chatMessages) {
+          chatMessages.scrollTop = chatMessages.scrollHeight;
         }
       }, 0);
     }
   }
 </script>
 
-<div class="chat-wrapper">
-  <div class="chat-container" bind:this={chatContainer}>
-    <div class="messages">
-      {#each messages as message (message.id)}
-        <div class="message {message.sender}">
-          <div class="avatar">
-            {#if message.sender === 'ai'}
-              <span>AI</span>
-            {:else}
-              <span>ME</span>
-            {/if}
-          </div>
-          <div class="content">
-            <p class="content-text">{message.text}</p>
-            <span class="timestamp">{new Date(message.timestamp).toLocaleString()}</span>
-          </div>
-        </div>
-      {/each}
+<div class="messages"  bind:this={chatMessages}>
+  {#each messages as message (message.id)}
+    <div class="message {message.sender}">
+      <div class="avatar">
+        {#if message.sender === 'ai'}
+          <span>AI</span>
+        {:else}
+          <span>ME</span>
+        {/if}
+      </div>
+      <div class="content">
+        <p class="content-text">{message.text}</p>
+        <span class="timestamp">{new Date(message.timestamp).toLocaleString()}</span>
+      </div>
     </div>
-  </div>
+  {/each}
 </div>
 
 <style>
@@ -88,7 +84,7 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    padding-bottom: 1rem;
+    padding: 1rem;
   }
 
   .message {

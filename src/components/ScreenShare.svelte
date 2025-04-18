@@ -168,34 +168,30 @@
 </script>
 
 <div class="screen-share-container">
-    <div class="video-container">
-        <div class="video-wrapper">
-            <video
-                bind:this={videoRef}
-                autoplay
-                playsinline
-                muted
-                class="video-preview"
-            ></video>
-            
-            {#if !isSharing}
-                <button 
-                    class="btn {wsHandler.isConnected ? 'btn-primary' : 'btn-disabled'}"
-                    on:click={startSharing}
-                    disabled={!wsHandler.isConnected}
-                >
-                    {wsHandler.isConnected ? "Start Screen Share" : "Connecting to server..."}
-                </button>
-            {:else}
-                <button 
-                    class="btn btn-destructive"
-                    on:click={stopSharing}
-                >
-                    Stop Sharing
-                </button>
-            {/if}
-        </div>
-    </div>
+    <video
+        bind:this={videoRef}
+        autoplay
+        playsinline
+        muted
+        class="video-preview"
+    ></video>
+    
+    {#if !isSharing}
+        <button 
+            class="btn {wsHandler.isConnected ? 'btn-primary' : 'btn-disabled'}"
+            on:click={startSharing}
+            disabled={!wsHandler.isConnected}
+        >
+            {wsHandler.isConnected ? "Start Screen Share" : "Connecting to server..."}
+        </button>
+    {:else}
+        <button 
+            class="btn btn-destructive"
+            on:click={stopSharing}
+        >
+            Stop Sharing
+        </button>
+    {/if}
 </div>
 <style>
 :global(body) {
@@ -203,5 +199,48 @@
     font-family: system-ui, sans-serif;
     background-color: #1a1a1a;
     color: #ffffff;
+}
+
+.screen-share-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.video-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background-color: #000;
+}
+
+button {
+    position: absolute;
+    bottom: 20px;
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-destructive {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn-disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
 }
 </style>

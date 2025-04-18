@@ -88,7 +88,13 @@
     <button 
       class="toggle-button" 
       class:active={$screenEnabled}
-      onclick={() => screenEnabled.set(!$screenEnabled)}
+      onclick={() => {
+        if ($screenEnabled) {
+          window.dispatchEvent(new CustomEvent('toggleScreenShare'));
+        } else {
+          screenEnabled.set(true);
+        }
+      }}
       aria-label="Toggle computer screen"
     >
       🖥️
@@ -102,7 +108,6 @@
     >
       <img src={avatarIcon} alt="Avatar" class="select-icon" />
     </button>
-
     <button 
       class="toggle-button" 
       class:active={speakerEnabled}
@@ -110,11 +115,17 @@
     >
       🔊
     </button>
-
     <button 
       class="toggle-button" 
       class:active={$chatEnabled}
-      onclick={() => chatEnabled.set(!$chatEnabled)}
+      onclick={() => {
+        if ($chatEnabled) {
+          // Import the function from Desktop component
+          window.dispatchEvent(new CustomEvent('toggleChat'));
+        } else {
+          chatEnabled.set(true);
+        }
+      }}
       aria-label="Toggle Chat"
     >
       <img src={chatIcon} alt="Chat" class="select-icon" />

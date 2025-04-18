@@ -53,16 +53,34 @@
         }
     };
 
+    // Add event listeners for toolbar icon clicks
+    const handleToggleChat = () => {
+      if (activeWindow !== 'chat') {
+        setActiveWindow('chat');
+      } else {
+        chatEnabled.set(false);
+      }
+    };
+
+    const handleToggleScreenShare = () => {
+      if (activeWindow !== 'screen') {
+        setActiveWindow('screen');
+      } else {
+        screenEnabled.set(false);
+      }
+    };
+
     window.addEventListener('resize', handleResize);
+    window.addEventListener('toggleChat', handleToggleChat);
+    window.addEventListener('toggleScreenShare', handleToggleScreenShare);
 
     // Cleanup listener when component is destroyed
     return () => {
         window.removeEventListener('resize', handleResize);
+        window.removeEventListener('toggleChat', handleToggleChat);
+        window.removeEventListener('toggleScreenShare', handleToggleScreenShare);
     };
   });
-
-
-
 
   function startDrag(e: MouseEvent, win: WindowState, windowType: 'chat' | 'screen') {
     setActiveWindow(windowType);
