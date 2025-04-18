@@ -1,9 +1,11 @@
 <script lang="ts">
   import avatarIcon from '../assets/avatar.png';
+  import chatIcon from '../assets/chat.svg';
   import type { WebSocketService } from '../services/websocket';
   import { screenEnabled } from '../stores/screen';
   import { receivedAudioData, audioLevel } from '../stores/audio';
   import { audioPlayer } from '../services/audioplayer';
+  import { chatEnabled } from '../stores/chat';
 
   export let wsHandler: WebSocketService;
 
@@ -108,6 +110,15 @@
     >
       🔊
     </button>
+
+    <button 
+      class="toggle-button" 
+      class:active={$chatEnabled}
+      onclick={() => chatEnabled.set(!$chatEnabled)}
+      aria-label="Toggle Chat"
+    >
+      <img src={chatIcon} alt="Chat" class="select-icon" />
+    </button>
   </div>
   
   {#if microphoneEnabled || $receivedAudioData}
@@ -145,6 +156,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    margin: auto;
+    z-index: 1001;
   }
 
   .toolbar {

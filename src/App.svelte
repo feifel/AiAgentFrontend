@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { WebSocketService } from './services/websocket';
-  import Chat from './components/Chat.svelte';
+  import Desktop from './components/Desktop.svelte';
   import Toolbar from './components/Toolbar.svelte';
 
   let wsHandler: WebSocketService;
@@ -16,15 +16,11 @@
 </script>
 
 <div class="layout">
-  <header class="header">
-    <h1 class="title">AI Agent</h1>
-  </header>
+  <h1 class="title">AI Agent</h1>
   <main class="main-content">
-    <Chat {wsHandler} />
+    <Desktop {wsHandler} />
   </main>
-  <footer class="footer">
-    <Toolbar {wsHandler} />
-  </footer>
+  <Toolbar {wsHandler} />
 </div>
 
 <style>
@@ -34,20 +30,11 @@
     min-height: 100vh;
     height: 100vh;
   }
-  .header {
-    flex: 0 0 auto;
-    position: sticky;
-    top: 0;
-    width: 100%;
-    z-index: 1001;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-    padding: 1rem 0;
-    text-align: center;
-  }
   .title {
-    margin: 0;
+    margin: auto;
     font-size: 1.5rem;
     font-weight: bold;
+    z-index: 1001;
   }
   .main-content {
     flex: 1 1 auto;

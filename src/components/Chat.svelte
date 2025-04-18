@@ -1,11 +1,9 @@
 <script lang="ts">
-  import ScreenShare from './ScreenShare.svelte';
-  import type { WebSocketMessage, Response } from '../types/websocket';
-  import { screenEnabled } from '../stores/screen';
-  import type { WebSocketService } from '../services/websocket';
+  
+  import type { Response } from '../types/websocket';
+  
   import { webSocketMessage } from '../stores/websocket';
 
-  export let wsHandler: WebSocketService;
 
   interface ChatMessage {
     timestamp: number;
@@ -66,12 +64,6 @@
       {/each}
     </div>
   </div>
-
-  {#if $screenEnabled}
-    <div class="screen-share-overlay">
-      <ScreenShare {wsHandler} />
-    </div>
-  {/if}
 </div>
 
 <style>

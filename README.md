@@ -44,7 +44,6 @@ This is the Frontend for my AI Agent Backend (see other project). You can talk a
 This project was heavily inspired by https://github.com/yeyu2/multimodal-client-vite
 
 ## Roadmap
-1. Refactor WebSocketMessages to be ready for new usecase STT (Speach To Text) and attachment processing (e.g. PDF)
 1. Implement a proper chat history
 2. Add a toolbar in a separate Svelte 5 app 
     1. Add a dropdown list to select the LLM (gemma-3, Qwen2.5, llama, etc.)
