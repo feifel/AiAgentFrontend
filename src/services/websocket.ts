@@ -37,10 +37,6 @@ export class WebSocketService {
         clearTimeout(this.connectionTimeout);
         this.reconnectAttempts = 0;
         this.isConnected = true;
-        
-        this.sendMessage({
-          setup: {}
-        });
       };
 
       this.ws.onclose = () => {

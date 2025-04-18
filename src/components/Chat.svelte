@@ -1,40 +1,40 @@
 <script lang="ts">
   import ScreenShare from './ScreenShare.svelte';
-  import type { WebSocketMessage } from '../types/websocket';
+  import type { WebSocketMessage, Response } from '../types/websocket';
   import { screenEnabled } from '../stores/screen';
   import type { WebSocketService } from '../services/websocket';
   import { webSocketMessage } from '../stores/websocket';
 
   export let wsHandler: WebSocketService;
-  let messageInput = '';
-  let messages: (WebSocketMessage & { id: number })[] = [];
-  let messageIdCounter = 0;
-  let chatContainer: HTMLDivElement;
-  let lastMessageTimestamp: number = new Date().getTime();
-  let unsubscribeEffect: () => void;
 
-  function handleSubmit() {
-    if (messageInput.trim()) {
-      const message = { 
-        mime_type: "text/plain", 
-        data: messageInput, 
-        sender: 'user', 
-        timestamp: Date.now(),
-        id: messageIdCounter++
-      };
-      wsHandler.sendMessage(message);
-      messageInput = '';
-    }
+  interface ChatMessage {
+    timestamp: number;
+    sender: string;
+    text: string;
+    id: number;
   }
 
+  let messageInput = '';
+  let messages: ChatMessage[] = [];
+  let messageIdCounter = 0;
+  let chatContainer: HTMLDivElement;
+  let lastMessageTimestamp: number|undefined = new Date().getTime();
+
   // Watch for new messages
+  // TODO: Check why this timestamp check is needed
   $: if ($webSocketMessage && $webSocketMessage.timestamp != lastMessageTimestamp) {
-    console.log('Check if received message is text message...');
-    if ($webSocketMessage.mime_type === "text/plain") {
-      console.log('New text message received:', $webSocketMessage);
+    console.log('Check if received message is Response message...');
+    if ($webSocketMessage.type === "Response") {
+      console.log('New Response received:', $webSocketMessage);
+      let response: Response = $webSocketMessage as Response;
+      const chatMessage: ChatMessage = {
+        sender: response.context,
+        text: response.data,
+        timestamp: response.timestamp,
+        id: messageIdCounter++
+      };
       lastMessageTimestamp = $webSocketMessage.timestamp;
-      const messageWithId = { ...$webSocketMessage, id: messageIdCounter++ };
-      messages = [...messages, messageWithId];
+      messages = [...messages, chatMessage];
       console.log('we have now the following number of messages:' + messages.length);
       // Scroll to bottom after message added
       setTimeout(() => {
@@ -59,9 +59,7 @@
             {/if}
           </div>
           <div class="content">
-            {#if message.mime_type === 'text/plain'}
-              <p class="content-text">{message.data}</p>
-            {/if}
+            <p class="content-text">{message.text}</p>
             <span class="timestamp">{new Date(message.timestamp).toLocaleString()}</span>
           </div>
         </div>

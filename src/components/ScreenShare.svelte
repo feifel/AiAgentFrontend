@@ -4,13 +4,9 @@
     import type { WebSocketService } from '../services/websocket';
     import { webSocketMessage } from '../stores/websocket';
     import { audioLevel, receivedAudioData} from '../stores/audio';
+    import type { AudioStream } from '../types/websocket';
 
     export let wsHandler: WebSocketService;
-
-    interface ChatMessage {
-        text: string;
-        timestamp: string;
-    }
 
     interface AudioStats {
         rms: number;
@@ -19,25 +15,21 @@
     }
 
     let isSharing = false;
-    let playbackAudioLevel = 0;
     let videoRef: HTMLVideoElement;
     let audioContext: AudioContext | null = null;
     let audioStream: MediaStream | null = null;
     let audioWorkletNode: AudioWorkletNode | null = null;
     let captureInterval: ReturnType<typeof setInterval>;
     let audioStats: AudioStats | null = null;
-    
-    let messages: ChatMessage[] = [{
-        text: "Screen sharing session started. I'll transcribe what I see.",
-        timestamp: new Date().toLocaleTimeString()
-    }];
+
 
     $: if ($webSocketMessage) {
         console.log('Check if received message is audio data...');
         // Handle incoming Audio data      
-        if ($webSocketMessage.mime_type === 'audio/pcm' && $webSocketMessage.sender === 'ai') {
+        if ($webSocketMessage.type === 'AudioStream') {
             console.log('Received audio data...');
-            receivedAudioData.set($webSocketMessage.data);
+            const audioMsg = $webSocketMessage as AudioStream;
+            receivedAudioData.set(audioMsg.data);
         }
     };
 
@@ -97,11 +89,10 @@
                 if (pcmData) {
                     const base64Data = Base64.fromUint8Array(new Uint8Array(pcmData));
                     wsHandler.sendMessage({
+                        type: 'AudioStream',
                         timestamp: Date.now(),
-                        sender: 'user',
-                        mime_type: 'audio/pcm',
                         data: base64Data,
-                        audioLevel: level
+                        mimeType: 'audio/pcm'
                     });
                 }
             };
@@ -125,20 +116,15 @@
                             ctx.drawImage(videoRef, 0, 0);
                             const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
                             wsHandler.sendMessage({
+                                type: 'ScreenShot',
                                 timestamp: Date.now(),
-                                sender: 'user',
-                                mime_type: 'image/jpeg',
-                                data: imageData
+                                data: imageData,                                
+                                mimeType: 'image/jpeg'
                             });
                         }
                     }
                 }, 3000);
             }
-
-            wsHandler.sendMessage({
-                setup: {}
-            });
-
             isSharing = true;
             console.log('Screen and audio sharing started successfully');
         } catch (err) {

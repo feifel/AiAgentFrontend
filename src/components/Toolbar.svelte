@@ -30,18 +30,13 @@
   function handleSendMessage() {
     if (terminalText.trim()) {
       wsHandler.sendMessage({
-        mime_type: "text/plain",
+        type: 'Request',
+        timestamp: Date.now(),
         data: terminalText,
-        sender: 'user',
-        timestamp: Date.now()
+        mimeType: "text/plain"
       });
       terminalText = ''; // Clear the input after sending
     }
-  }
-
-  // Watch for audio level from messages
-  $: if (wsHandler?.lastMessage?.audioLevel) {
-    audioLevel.set(wsHandler.lastMessage.audioLevel);
   }
 
   $: if ($receivedAudioData) {
