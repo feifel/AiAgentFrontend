@@ -1,5 +1,6 @@
-import type { AudioStream, WebSocketMessage, Response } from '../types/websocket';
+import type { AudioStream, WebSocketMessage, Response, Configuration } from '../types/websocket';
 import { audioStream, response } from '../stores/websocket';
+import { get } from 'svelte/store';
 
 export class WebSocketService {
   private ws: WebSocket | null = null;
@@ -10,8 +11,10 @@ export class WebSocketService {
   private readonly INITIAL_RECONNECT_DELAY = 5000;
   private readonly CONNECTION_TIMEOUT = 30000;
   public isConnected = false;
+  private configStore: any = null;
 
-  constructor(private url: string) {
+  constructor(private url: string, configurationStore?: any) {
+    this.configStore = configurationStore;
     this.connect();
   }
 
@@ -36,7 +39,11 @@ export class WebSocketService {
         console.log('WebSocket connected');
         clearTimeout(this.connectionTimeout);
         this.reconnectAttempts = 0;
-        this.isConnected = true;
+        this.isConnected = true;        
+        // Send configuration if available
+        if (this.configStore) {
+          this.sendMessage(get(this.configStore));
+        }
       };
 
       this.ws.onclose = () => {
@@ -94,6 +101,9 @@ export class WebSocketService {
   public sendMessage(message: WebSocketMessage | any) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
+      if(message.type != "AudioStream" && message.type != "ScreenShot"){
+        console.log("Send message via WebSocket: ", message);
+      }
     } else {
       console.warn('WebSocket is not connected, message not sent');
     }

@@ -6,7 +6,8 @@
   import { screenEnabled } from '../stores/screen';
   import { receivedAudioData, audioLevel, microphoneEnabled } from '../stores/audio';
   import { audioPlayer } from '../services/audioplayer';
-  import { chatEnabled, addMessage } from '../stores/chat';
+  import { chatEnabled, addMessage } from '../stores/chat';  
+  import { configuration } from '../stores/websocket';  
   import AudioCapture from './AudioCapture.svelte';
 
   export let wsHandler: WebSocketService;
@@ -23,7 +24,6 @@
 
   let selectedLLM = 'gemma-3';
   let selectedLanguage = 'en';
-  let speakerEnabled = false;
   let terminalEnabled = true;
   let paperclipEnabled = false;
   let avatarEnabled = false; // Toggle for woman portrait
@@ -87,9 +87,12 @@
       🎤
     </button>
     <button 
-      class="toggle-button" 
-      class:active={speakerEnabled}
-      onclick={() => speakerEnabled = !speakerEnabled}
+      class="toggle-button"
+      class:active={$configuration?.audioOutput}
+      onclick={() => configuration.update(config => ({ 
+        ...$configuration, 
+        audioOutput: !$configuration.audioOutput 
+      }))}
     >
       🔊
     </button>

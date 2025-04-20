@@ -1,9 +1,19 @@
 // Base interface for all WebSocket packages
 export interface WebSocketMessage {
-  readonly type: 'InterruptAudio' | 'ScreenShot' | 'AudioStream' | 'STTRequest' | 'Request' | 'Response';
+  readonly type: 'Configuration' | 'InterruptAudio' | 'ScreenShot' | 'AudioStream' | 'STTRequest' | 'Request' | 'Response';
   readonly timestamp: number;     // Date.now()
   //readonly version: '1.0';       // For future protocol versioning
   //readonly messageId: string;    // For request/response correlation
+}
+
+// InterruptAudio Message, to interrupt audio output when new Audio Input is detected
+export interface Configuration extends WebSocketMessage {
+  readonly type: 'Configuration';
+  readonly llm: string;
+  readonly lang: string;
+  readonly systemPrompt: string;
+  readonly audioOutput: boolean;
+  readonly processVideoInput: boolean;
 }
 
 // InterruptAudio Message, to interrupt audio output when new Audio Input is detected

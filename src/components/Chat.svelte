@@ -13,7 +13,6 @@
       // 'block: "end"' aligns the bottom of the anchor with the bottom of the scroll container.
       // 'behavior: "smooth"' uses the CSS scroll-behavior property.
       bottomAnchorElement.scrollIntoView({ behavior: "smooth", block: "end" });
-      console.log("Scrolled bottom anchor into view.");
     } 
   });
 </script>

@@ -1,17 +1,23 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { WebSocketService } from './services/websocket';
+  import { configuration, wsService } from './stores/websocket';
   import Desktop from './components/Desktop.svelte';
   import Toolbar from './components/Toolbar.svelte';
 
   let wsHandler: WebSocketService;
 
   onMount(() => {
-    wsHandler = new WebSocketService('ws://localhost:9073');
+    // Pass the configuration store to the WebSocketService
+    wsHandler = new WebSocketService('ws://localhost:9073', configuration);
+    // Set the WebSocketService instance in the store
+    wsService.set(wsHandler);
   });
 
   onDestroy(() => {
     wsHandler?.dispose();
+    // Clear the WebSocketService instance from the store
+    wsService.set(null);
   });
 </script>
 
