@@ -84,7 +84,28 @@
     >
       🎤
     </button>
-
+    <button 
+      class="toggle-button" 
+      class:active={speakerEnabled}
+      onclick={() => speakerEnabled = !speakerEnabled}
+    >
+      🔊
+    </button>
+    <button 
+      class="toggle-button" 
+      class:active={$chatEnabled}
+      onclick={() => {
+        if ($chatEnabled) {
+          // Import the function from Desktop component
+          window.dispatchEvent(new CustomEvent('toggleChat'));
+        } else {
+          chatEnabled.set(true);
+        }
+      }}
+      aria-label="Toggle Chat"
+    >
+      <img src={chatIcon} alt="Chat" class="select-icon" />
+    </button>
     <button 
       class="toggle-button" 
       class:active={$screenEnabled}
@@ -107,28 +128,6 @@
       aria-label="Toggle Avatar"
     >
       <img src={avatarIcon} alt="Avatar" class="select-icon" />
-    </button>
-    <button 
-      class="toggle-button" 
-      class:active={speakerEnabled}
-      onclick={() => speakerEnabled = !speakerEnabled}
-    >
-      🔊
-    </button>
-    <button 
-      class="toggle-button" 
-      class:active={$chatEnabled}
-      onclick={() => {
-        if ($chatEnabled) {
-          // Import the function from Desktop component
-          window.dispatchEvent(new CustomEvent('toggleChat'));
-        } else {
-          chatEnabled.set(true);
-        }
-      }}
-      aria-label="Toggle Chat"
-    >
-      <img src={chatIcon} alt="Chat" class="select-icon" />
     </button>
   </div>
   
@@ -168,7 +167,8 @@
     flex-direction: column;
     gap: 0.5rem;
     margin: auto;
-    z-index: 1001;
+    z-index: 1001;    
+    padding-top: 10px;
   }
 
   .toolbar {

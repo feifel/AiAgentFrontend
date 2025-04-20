@@ -1,5 +1,6 @@
+<!-- c:\Users\roman\source\repos\AiAgentFrontend\src\components\Desktop.svelte -->
 <script lang="ts">
-  import { onMount } from 'svelte'; // Ensure onMount is imported
+  import { onMount } from 'svelte';
   import Chat from './Chat.svelte';
   import ScreenShare from './ScreenShare.svelte';
   import { chatEnabled } from '../stores/chat';
@@ -10,7 +11,7 @@
 
   // Window positions and sizes
   type WindowState = { x: number; y: number; w: number; h: number };
-  // Initialize with default values, will be updated onMount for chatWindow
+  // Initialize with default values, will be updated onMount
   let chatWindow: WindowState = { x: 0, y: 0, w: 400, h: 500 };
   let screenWindow: WindowState = { x: 212, y: 76, w: 696, h: 493 };
 
@@ -20,40 +21,77 @@
   let resizing: ResizeState = null;
   let activeWindow: 'chat' | 'screen' = 'screen'; // Track the active window
 
-  // Set chat window to full width with spacing at top and bottom
+  // Reference to the main container element of this component
+  let desktopElement: HTMLDivElement;
+  // Dynamically calculated bounds
+  let desktopTopOffset = 0;
+  let desktopAvailableHeight = window.innerHeight; // Initial fallback
+
+  // Function to update desktop bounds based on the container element
+  function updateDesktopBounds() {
+    if (desktopElement) {
+      desktopTopOffset = desktopElement.offsetTop;
+      desktopAvailableHeight = desktopElement.offsetHeight;
+    } else {
+      // Fallback if element isn't ready (shouldn't happen in onMount)
+      // Use the old hardcoded values as a safe default
+      console.warn("Desktop element not found, using fallback spacing.");
+      desktopTopOffset = 35;
+      desktopAvailableHeight = window.innerHeight - 35 - 55;
+    }
+  }
+
+  // Set initial bounds and add listeners
   onMount(() => {
-    // Set chat window to full width with specified spacing
-    chatWindow = {
-      x: 0,
-      y: 35, // 35px space from the top
-      w: window.innerWidth,
-      h: window.innerHeight - 35 - 55 // Subtract top (35px) and bottom (50px) spacing
-    };
+    // Calculate the actual available space based on the component's rendered position
+    updateDesktopBounds();
 
-    // Add resize listener to maintain full width and specified spacing when browser is resized
+    // Initial layout is now handled by the reactive block below,
+    // which will use the calculated desktopTopOffset and desktopAvailableHeight.
+    // The old direct chatWindow initialization here is removed.
+
     const handleResize = () => {
-        // Check if the chat window is currently meant to be fullscreen
-        // For simplicity, we'll just update it if it's roughly fullscreen.
-        // A more robust solution might involve a dedicated state flag.
-        if (chatWindow.x === 0 && chatWindow.y === 35) {
-             chatWindow = {
-                ...chatWindow, // keep x, y
-                w: window.innerWidth,
-                h: window.innerHeight - 35 - 55 // Maintain top and bottom spacing
-             };
-        }
-        // Also update screen window boundaries if needed during resize
-        // (This part is related to existing drag/resize logic, ensuring
-        // windows don't go out of bounds after a browser resize)
-        if (screenWindow.x + screenWindow.w > window.innerWidth) {
-            screenWindow.x = Math.max(0, window.innerWidth - screenWindow.w);
-        }
-         if (screenWindow.y + screenWindow.h > window.innerHeight) {
-            screenWindow.y = Math.max(0, window.innerHeight - screenWindow.h);
-        }
+      // Recalculate bounds on window resize
+      updateDesktopBounds();
+
+      // Check if the chat window is currently meant to be fullscreen/full-height
+      // Adjust if necessary based on new bounds
+      // We check if it occupies the full width and starts at the top offset
+      if (chatWindow.x === 0 && chatWindow.w === window.innerWidth && chatWindow.y === desktopTopOffset) {
+        chatWindow = {
+          ...chatWindow, // keep x
+          y: desktopTopOffset,
+          w: window.innerWidth,
+          h: desktopAvailableHeight // Use dynamic height
+        };
+      }
+      // Similar check for screen window if it's meant to be fullscreen
+      if (screenWindow.x === 0 && screenWindow.w === window.innerWidth && screenWindow.y === desktopTopOffset) {
+         screenWindow = {
+          ...screenWindow, // keep x
+          y: desktopTopOffset,
+          w: window.innerWidth,
+          h: desktopAvailableHeight // Use dynamic height
+        };
+      }
+
+      // Also update screen/chat window boundaries if needed during resize to prevent going out of bounds
+      // (This part ensures windows stay within the overall viewport, which is generally correct)
+      if (chatWindow.x + chatWindow.w > window.innerWidth) {
+        chatWindow.x = Math.max(0, window.innerWidth - chatWindow.w);
+      }
+      if (chatWindow.y + chatWindow.h > window.innerHeight) {
+        chatWindow.y = Math.max(0, window.innerHeight - chatWindow.h);
+      }
+      if (screenWindow.x + screenWindow.w > window.innerWidth) {
+        screenWindow.x = Math.max(0, window.innerWidth - screenWindow.w);
+      }
+      if (screenWindow.y + screenWindow.h > window.innerHeight) {
+        screenWindow.y = Math.max(0, window.innerHeight - screenWindow.h);
+      }
     };
 
-    // Add event listeners for toolbar icon clicks
+    // Add event listeners for toolbar icon clicks (no changes needed here)
     const handleToggleChat = () => {
       if (activeWindow !== 'chat') {
         setActiveWindow('chat');
@@ -76,11 +114,39 @@
 
     // Cleanup listener when component is destroyed
     return () => {
-        window.removeEventListener('resize', handleResize);
-        window.removeEventListener('toggleChat', handleToggleChat);
-        window.removeEventListener('toggleScreenShare', handleToggleScreenShare);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('toggleChat', handleToggleChat);
+      window.removeEventListener('toggleScreenShare', handleToggleScreenShare);
     };
   });
+
+  // Reactive statement to handle window layout when enabled states change
+  $: {
+    // Ensure bounds are calculated before layout updates
+    // This might run before onMount completes if stores change early,
+    // so checking desktopElement helps, though updateDesktopBounds has a fallback.
+    if (desktopElement) {
+        updateDesktopBounds(); // Recalculate bounds if stores change, potentially causing layout shifts
+    }
+
+    const currentAvailableHeight = desktopAvailableHeight; // Use calculated height
+    const currentTopOffset = desktopTopOffset; // Use calculated top offset
+
+    if ($chatEnabled && $screenEnabled) {
+      // Both windows are enabled, arrange side-by-side within available space
+      const halfWidth = window.innerWidth / 2;
+      chatWindow = { x: 0, y: currentTopOffset, w: halfWidth, h: currentAvailableHeight };
+      screenWindow = { x: halfWidth, y: currentTopOffset, w: halfWidth, h: currentAvailableHeight };
+    } else if ($chatEnabled) {
+      // Only chat is enabled, make it full width within available space
+      chatWindow = { x: 0, y: currentTopOffset, w: window.innerWidth, h: currentAvailableHeight };
+    } else if ($screenEnabled) {
+      // Only screen share is enabled, make it full width within available space
+      screenWindow = { x: 0, y: currentTopOffset, w: window.innerWidth, h: currentAvailableHeight };
+    }
+    // If neither is enabled, their state remains as it was, but they won't be visible
+  }
+
 
   function startDrag(e: MouseEvent, win: WindowState, windowType: 'chat' | 'screen') {
     setActiveWindow(windowType);
@@ -92,40 +158,44 @@
 
   function onDrag(e: MouseEvent) {
     if (dragging) {
-    let newX = e.clientX - dragging.offsetX;
-    let newY = e.clientY - dragging.offsetY;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+      let newX = e.clientX - dragging.offsetX;
+      let newY = e.clientY - dragging.offsetY;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight; // Use full viewport height for drag constraints
 
-    if (dragging.type === 'chat') {
-    const currentW = chatWindow.w;
-    const currentH = chatWindow.h;
-    // Ensure window doesn't go outside viewport during drag
-    const maxX = Math.max(0, viewportWidth - currentW); // Prevent negative max if window is wider than viewport
-    const maxY = Math.max(0, viewportHeight - currentH); // Prevent negative max if window is taller than viewport
-    const clampedX = Math.max(0, Math.min(newX, maxX));
-    const clampedY = Math.max(0, Math.min(newY, maxY));
-    chatWindow = { ...chatWindow, x: clampedX, y: clampedY };
-    } else if (dragging.type === 'screen') {
-    const currentW = screenWindow.w;
-    const currentH = screenWindow.h;
-    // Ensure window doesn't go outside viewport during drag
-    const maxX = Math.max(0, viewportWidth - currentW);
-    const maxY = Math.max(0, viewportHeight - currentH);
-    const clampedX = Math.max(0, Math.min(newX, maxX));
-    const clampedY = Math.max(0, Math.min(newY, maxY));
-    screenWindow = { ...screenWindow, x: clampedX, y: clampedY };
-    }
+      if (dragging.type === 'chat') {
+        const currentW = chatWindow.w;
+        const currentH = chatWindow.h;
+        // Ensure window doesn't go outside viewport during drag
+        const maxX = Math.max(0, viewportWidth - currentW);
+        const maxY = Math.max(0, viewportHeight - currentH);
+        const clampedX = Math.max(0, Math.min(newX, maxX));
+        // Clamp Y relative to the overall viewport, not just the desktop area
+        const clampedY = Math.max(0, Math.min(newY, maxY));
+        chatWindow = { ...chatWindow, x: clampedX, y: clampedY };
+      } else if (dragging.type === 'screen') {
+        const currentW = screenWindow.w;
+        const currentH = screenWindow.h;
+        // Ensure window doesn't go outside viewport during drag
+        const maxX = Math.max(0, viewportWidth - currentW);
+        const maxY = Math.max(0, viewportHeight - currentH);
+        const clampedX = Math.max(0, Math.min(newX, maxX));
+        // Clamp Y relative to the overall viewport
+        const clampedY = Math.max(0, Math.min(newY, maxY));
+        screenWindow = { ...screenWindow, x: clampedX, y: clampedY };
+      }
     }
   }
 
   function stopDrag() {
+    // ... rest of code remains same
     dragging = null;
     window.removeEventListener('mousemove', onDrag);
     window.removeEventListener('mouseup', stopDrag);
   }
 
   function startResize(e: MouseEvent, windowType: 'chat' | 'screen') {
+    // ... rest of code remains same
     setActiveWindow(windowType);
     e.preventDefault();
     const targetWin = windowType === 'chat' ? chatWindow : screenWindow;
@@ -144,53 +214,55 @@
 
   function onResize(e: MouseEvent) {
     if (resizing) {
-    // Minimum dimensions
-    const minW = 250;
-    const minH = 150;
+      // Minimum dimensions
+      const minW = 250;
+      const minH = 150;
 
-    // Calculate potential new dimensions
-    const potentialW = resizing.startW + (e.clientX - resizing.startX);
-    const potentialH = resizing.startH + (e.clientY - resizing.startY);
+      // Calculate potential new dimensions
+      const potentialW = resizing.startW + (e.clientX - resizing.startX);
+      const potentialH = resizing.startH + (e.clientY - resizing.startY);
 
-    // Enforce minimum dimensions
-    let newW = Math.max(minW, potentialW);
-    let newH = Math.max(minH, potentialH);
+      // Enforce minimum dimensions
+      let newW = Math.max(minW, potentialW);
+      let newH = Math.max(minH, potentialH);
 
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const currentX = resizing.startXPos;
-    const currentY = resizing.startYPos;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight; // Use full viewport height for resize constraints
+      const currentX = resizing.startXPos;
+      const currentY = resizing.startYPos;
 
-    // Prevent resizing beyond viewport boundaries
-    // Ensure new width doesn't exceed available space from the window's starting X position
-    newW = Math.min(newW, viewportWidth - currentX);
-    // Ensure new height doesn't exceed available space from the window's starting Y position
-    newH = Math.min(newH, viewportHeight - currentY);
+      // Prevent resizing beyond viewport boundaries
+      newW = Math.min(newW, viewportWidth - currentX);
+      // Use viewportHeight for boundary check, not just desktopAvailableHeight
+      newH = Math.min(newH, viewportHeight - currentY);
 
-    // Re-check minimum dimensions after clamping to viewport
-    newW = Math.max(minW, newW);
-    newH = Math.max(minH, newH);
+      // Re-check minimum dimensions after clamping to viewport
+      newW = Math.max(minW, newW);
+      newH = Math.max(minH, newH);
 
 
-    if (resizing.type === 'chat') {
-    chatWindow = { ...chatWindow, w: newW, h: newH };
-    } else if (resizing.type === 'screen') {
-    screenWindow = { ...screenWindow, w: newW, h: newH };
-    }
+      if (resizing.type === 'chat') {
+        chatWindow = { ...chatWindow, w: newW, h: newH };
+      } else if (resizing.type === 'screen') {
+        screenWindow = { ...screenWindow, w: newW, h: newH };
+      }
     }
   }
 
   function stopResize() {
+    // ... rest of code remains same
     resizing = null;
     window.removeEventListener('mousemove', onResize);
     window.removeEventListener('mouseup', stopResize);
   }
 
   function setActiveWindow(windowType: 'chat' | 'screen') {
+    // ... rest of code remains same
     activeWindow = windowType;
   }
 
   function handleHeaderKeyDown(e: KeyboardEvent) {
+    // ... rest of code remains same
     if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     console.log('Header activated via keyboard');
@@ -205,46 +277,54 @@
   }
 
   $: if ($screenEnabled) {
-    // Set specific dimensions when screenshare is opened
-    //screenWindow = { x: 212, y: 76, w: 696, h: 493 };
     setActiveWindow('screen');
   }
 
 </script>
 
-<!-- HTML Template remains the same -->
-{#if $chatEnabled}
-  <div class="floating-window" role="dialog" aria-modal="false" aria-labelledby="chat-header" tabindex="-1" style="left: {chatWindow.x}px; top: {chatWindow.y}px; width: {chatWindow.w}px; height: {chatWindow.h}px; z-index: {activeWindow === 'chat' ? 21 : 20};" on:mousedown={() => setActiveWindow('chat')}>
-    <div class="window-header" id="chat-header" role="toolbar" aria-label="Chat window header" tabindex="0" on:mousedown|stopPropagation={ (e) => startDrag(e, chatWindow, 'chat') } >
-    Chat
-    <button class="close-btn" on:click={() => chatEnabled.set(false)} aria-label="Close chat window">×</button>
+<!-- Wrap the windows in a container div to measure its bounds -->
+<div class="desktop-container" bind:this={desktopElement}>
+  {#if $chatEnabled}
+    <div class="floating-window" role="dialog" aria-modal="false" aria-labelledby="chat-header" tabindex="-1" style="left: {chatWindow.x}px; top: {chatWindow.y}px; width: {chatWindow.w}px; height: {chatWindow.h}px; z-index: {activeWindow === 'chat' ? 21 : 20};" on:mousedown={() => setActiveWindow('chat')}>
+      <div class="window-header" id="chat-header" role="toolbar" aria-label="Chat window header" tabindex="0" on:mousedown|stopPropagation={ (e) => startDrag(e, chatWindow, 'chat') } >
+      Chat
+      <button class="close-btn" on:click={() => chatEnabled.set(false)} aria-label="Close chat window">×</button>
+      </div>
+      <div class="window-content">
+      <Chat/>
+      </div>
+      <button class="resize-handle" type="button" aria-label="Resize chat window" tabindex="-1" on:mousedown|stopPropagation={ (e) => startResize(e, 'chat') }></button>
     </div>
-    <div class="window-content">
-    <Chat/>
-    </div>
-    <button class="resize-handle" type="button" aria-label="Resize chat window" tabindex="-1" on:mousedown|stopPropagation={ (e) => startResize(e, 'chat') }></button>
-  </div>
-{/if}
+  {/if}
 
-{#if $screenEnabled}
-  <div class="floating-window" role="dialog" aria-modal="false" aria-labelledby="screenshare-header" tabindex="-1" style="left: {screenWindow.x}px; top: {screenWindow.y}px; width: {screenWindow.w}px; height: {screenWindow.h}px; z-index: {activeWindow === 'screen' ? 21 : 20};" on:mousedown={() => setActiveWindow('screen')}>
-    <div class="window-header" id="screenshare-header" role="toolbar" aria-label="ScreenShare window header" tabindex="0" on:mousedown|stopPropagation={ (e) => startDrag(e, screenWindow, 'screen') } >
-    ScreenShare
-    <button class="close-btn" on:click={() => screenEnabled.set(false)} aria-label="Close screenshare window">×</button>
+  {#if $screenEnabled}
+    <div class="floating-window" role="dialog" aria-modal="false" aria-labelledby="screenshare-header" tabindex="-1" style="left: {screenWindow.x}px; top: {screenWindow.y}px; width: {screenWindow.w}px; height: {screenWindow.h}px; z-index: {activeWindow === 'screen' ? 21 : 20};" on:mousedown={() => setActiveWindow('screen')}>
+      <div class="window-header" id="screenshare-header" role="toolbar" aria-label="ScreenShare window header" tabindex="0" on:mousedown|stopPropagation={ (e) => startDrag(e, screenWindow, 'screen') } >
+      ScreenShare
+      <button class="close-btn" on:click={() => screenEnabled.set(false)} aria-label="Close screenshare window">×</button>
+      </div>
+      <div class="window-content">
+      <ScreenShare {wsHandler} />
+      </div>
+      <button class="resize-handle" type="button" aria-label="Resize screenshare window" tabindex="-1" on:mousedown|stopPropagation={ (e) => startResize(e, 'screen') }></button>
     </div>
-    <div class="window-content">
-    <ScreenShare {wsHandler} />
-    </div>
-    <button class="resize-handle" type="button" aria-label="Resize screenshare window" tabindex="-1" on:mousedown|stopPropagation={ (e) => startResize(e, 'screen') }></button>
-  </div>
-{/if}
+  {/if}
+</div>
 
 
 <!-- Styles remain the same -->
 <style>
-/* ... styles remain the same ... */
+/* Add style for the new container */
+.desktop-container {
+  position: relative; /* Needed for offsetTop calculation relative to parent */
+  width: 100%;
+  height: 100%; /* Ensure it fills the parent space */
+  /* border: 1px dashed red; */ /* Optional: for debugging layout */
+}
+
+/* ... rest of styles remain the same ... */
 .floating-window {
-  position: fixed;
+  position: fixed; /* Keep windows fixed relative to viewport */
   background: #23272f;
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.18);

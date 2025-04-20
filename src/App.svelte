@@ -35,6 +35,7 @@
     font-size: 1.5rem;
     font-weight: bold;
     z-index: 1001;
+    padding-bottom: 10px;
   }
   .main-content {
     flex: 1 1 auto;
