@@ -40,15 +40,4 @@
     flex: 1 1 auto;
     overflow-y: auto;
   }
-  .footer {
-    flex: 0 0 auto;
-    position: sticky;
-    bottom: 0;
-    width: 100%;
-    z-index: 1001;
-    box-shadow: 0 -2px 4px rgba(0,0,0,0.03);
-    display: flex;
-    justify-content: center;
-    padding: 0.5rem 0;
-  }
 </style>

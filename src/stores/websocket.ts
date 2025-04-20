@@ -1,4 +1,5 @@
-import { writable } from 'svelte/store';
-import type { WebSocketMessage } from '../types/websocket';
+import { writable, get } from 'svelte/store';
+import type { WebSocketMessage, AudioStream, Response } from '../types/websocket';
 
-export const webSocketMessage = writable<WebSocketMessage | null>(null);
+export const audioStream = writable<AudioStream | null>(null);
+export const response = writable<Response | null>(null);

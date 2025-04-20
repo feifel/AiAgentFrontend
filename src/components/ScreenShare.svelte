@@ -1,10 +1,8 @@
 <script lang="ts">
-    import { onDestroy } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import { Base64 } from 'js-base64';
     import type { WebSocketService } from '../services/websocket';
-    import { webSocketMessage } from '../stores/websocket';
     import { audioLevel, receivedAudioData} from '../stores/audio';
-    import type { AudioStream } from '../types/websocket';
 
     export let wsHandler: WebSocketService;
 
@@ -21,17 +19,24 @@
     let audioWorkletNode: AudioWorkletNode | null = null;
     let captureInterval: ReturnType<typeof setInterval>;
     let audioStats: AudioStats | null = null;
-
-
-    $: if ($webSocketMessage) {
-        console.log('Check if received message is audio data...');
-        // Handle incoming Audio data      
-        if ($webSocketMessage.type === 'AudioStream') {
-            console.log('Received audio data...');
-            const audioMsg = $webSocketMessage as AudioStream;
-            receivedAudioData.set(audioMsg.data);
+   
+    // Start sharing automatically when component is mounted
+    onMount(() => {
+        if (wsHandler.isConnected) {
+            startSharing();
+        } else {
+            // If not connected yet, wait for connection
+            const checkConnection = setInterval(() => {
+                if (wsHandler.isConnected) {
+                    clearInterval(checkConnection);
+                    startSharing();
+                }
+            }, 500);
+            
+            // Clean up interval if component is destroyed before connection
+            return () => clearInterval(checkConnection);
         }
-    };
+    });
 
     async function startSharing() {
         if (isSharing) return;
@@ -45,7 +50,7 @@
             });
             console.log('Screen stream obtained successfully');
             
-            const audioStream = await navigator.mediaDevices.getUserMedia({
+            const userAudioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
@@ -55,9 +60,12 @@
                 }
             });
             console.log('Audio stream obtained successfully with settings:', {
-                channelCount: audioStream.getAudioTracks()[0].getSettings().channelCount,
-                sampleRate: audioStream.getAudioTracks()[0].getSettings().sampleRate
+                channelCount: userAudioStream.getAudioTracks()[0].getSettings().channelCount,
+                sampleRate: userAudioStream.getAudioTracks()[0].getSettings().sampleRate
             });
+
+            // Store the audio stream for later cleanup
+            audioStream = userAudioStream;
 
             audioContext = new AudioContext({
                 sampleRate: 24000,
@@ -68,7 +76,7 @@
             await audioContext.audioWorklet.addModule('/worklets/audio-processor.js');
             console.log('Audio worklet module loaded successfully');
             
-            const source = audioContext.createMediaStreamSource(audioStream);
+            const source = audioContext.createMediaStreamSource(userAudioStream);
             audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-processor', {
                 numberOfInputs: 1,
                 numberOfOutputs: 1,
@@ -176,71 +184,51 @@
         class="video-preview"
     ></video>
     
-    {#if !isSharing}
-        <button 
-            class="btn {wsHandler.isConnected ? 'btn-primary' : 'btn-disabled'}"
-            on:click={startSharing}
-            disabled={!wsHandler.isConnected}
-        >
-            {wsHandler.isConnected ? "Start Screen Share" : "Connecting to server..."}
-        </button>
-    {:else}
-        <button 
-            class="btn btn-destructive"
-            on:click={stopSharing}
-        >
-            Stop Sharing
-        </button>
-    {/if}
+    <div class="status-indicator">
+        {#if !isSharing}
+            <span class="sharing-inactive">{wsHandler.isConnected ? "Initializing screen share..." : "Connecting to server..."}</span>
+        {/if}
+    </div>
 </div>
+
 <style>
-:global(body) {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    background-color: #1a1a1a;
-    color: #ffffff;
-}
+    :global(body) {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background-color: #1a1a1a;
+        color: #ffffff;
+    }
 
-.screen-share-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    position: relative;
-}
+    .screen-share-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
 
-.video-preview {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background-color: #000;
-}
+    .video-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background-color: #000;
+    }
 
-button {
-    position: absolute;
-    bottom: 20px;
-    padding: 10px 20px;
-    border-radius: 4px;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-}
+    .status-indicator {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px 16px;
+        border-radius: 4px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        font-size: 14px;
+    }
 
-.btn-primary {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.btn-destructive {
-    background-color: #f44336;
-    color: white;
-}
-
-.btn-disabled {
-    background-color: #cccccc;
-    color: #666666;
-    cursor: not-allowed;
-}
+    .sharing-inactive {
+        color: #f44336;
+    }
 </style>

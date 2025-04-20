@@ -1,5 +1,5 @@
-import type { WebSocketMessage } from '../types/websocket';
-import { webSocketMessage } from '../stores/websocket';
+import type { AudioStream, WebSocketMessage, Response } from '../types/websocket';
+import { audioStream, response } from '../stores/websocket';
 
 export class WebSocketService {
   private ws: WebSocket | null = null;
@@ -57,7 +57,13 @@ export class WebSocketService {
           const { data, ...msgWithoutData } = msg;
           console.log('Received WebSocket message for propagation:', msgWithoutData);
           msg.timestamp = Date.now();
-          webSocketMessage.set(msg);
+          if(msg.type === "AudioStream") {
+            console.log('AudioStream message received');
+            audioStream.set(msg as AudioStream);
+          } else if(msg.type === "Response") {
+            console.log('Response message received');
+            response.set(msg as Response);
+          }
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
         }

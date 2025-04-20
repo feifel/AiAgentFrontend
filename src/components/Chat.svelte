@@ -1,54 +1,28 @@
 <script lang="ts">
-  
-  import type { Response } from '../types/websocket';
-  
-  import { webSocketMessage } from '../stores/websocket';
+  import { chatMessages } from "../stores/chat";
 
+  let chatMessagesElement: HTMLDivElement;
+  // Reference to the anchor element at the bottom
+  let bottomAnchorElement: HTMLDivElement;
 
-  interface ChatMessage {
-    timestamp: number;
-    sender: string;
-    text: string;
-    id: number;
-  }
-
-  let messageInput = '';
-  let messages: ChatMessage[] = [];
-  let messageIdCounter = 0;
-  let chatMessages: HTMLDivElement;
-  let lastMessageTimestamp: number|undefined = new Date().getTime();
-
-  // Watch for new messages
-  // TODO: Check why this timestamp check is needed
-  $: if ($webSocketMessage && $webSocketMessage.timestamp != lastMessageTimestamp) {
-    console.log('Check if received message is Response message...');
-    if ($webSocketMessage.type === "Response") {
-      console.log('New Response received:', $webSocketMessage);
-      let response: Response = $webSocketMessage as Response;
-      const chatMessage: ChatMessage = {
-        sender: response.context,
-        text: response.data,
-        timestamp: response.timestamp,
-        id: messageIdCounter++
-      };
-      lastMessageTimestamp = $webSocketMessage.timestamp;
-      messages = [...messages, chatMessage];
-      console.log('we have now the following number of messages:' + messages.length);
-      // Scroll to bottom after message added
-      setTimeout(() => {
-        if (chatMessages) {
-          chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-      }, 0);
-    }
-  }
+  $effect(() => {
+    // This effect depends on the $chatMessages store.
+    // It will re-run whenever $chatMessages changes *after* the DOM has been updated.
+    if ($chatMessages.length > 0 && bottomAnchorElement) {
+      // Scroll the anchor element into view.
+      // 'block: "end"' aligns the bottom of the anchor with the bottom of the scroll container.
+      // 'behavior: "smooth"' uses the CSS scroll-behavior property.
+      bottomAnchorElement.scrollIntoView({ behavior: "smooth", block: "end" });
+      console.log("Scrolled bottom anchor into view.");
+    } 
+  });
 </script>
 
-<div class="messages"  bind:this={chatMessages}>
-  {#each messages as message (message.id)}
+<div class="messages" bind:this={chatMessagesElement}>
+  {#each $chatMessages as message (message.id)}
     <div class="message {message.sender}">
       <div class="avatar">
-        {#if message.sender === 'ai'}
+        {#if message.sender === "ai"}
           <span>AI</span>
         {:else}
           <span>ME</span>
@@ -56,10 +30,14 @@
       </div>
       <div class="content">
         <p class="content-text">{message.text}</p>
-        <span class="timestamp">{new Date(message.timestamp).toLocaleString()}</span>
+        <span class="timestamp"
+          >{new Date(message.timestamp).toLocaleString()}</span
+        >
       </div>
     </div>
   {/each}
+  <!-- Add an empty div at the end to act as a scroll anchor -->
+  <div bind:this={bottomAnchorElement}></div>
 </div>
 
 <style>
@@ -85,6 +63,8 @@
     flex-direction: column;
     gap: 1rem;
     padding: 1rem;
+    /* Add smooth scrolling behavior for scrollTop changes */
+    scroll-behavior: smooth;
   }
 
   .message {
@@ -121,7 +101,7 @@
     background-color: var(--message-bg, rgba(255, 255, 255, 0.05));
     padding: 0.75rem;
     border-radius: 0.5rem;
-    max-width: 70%;    
+    max-width: 70%;
     text-align: left;
   }
 
