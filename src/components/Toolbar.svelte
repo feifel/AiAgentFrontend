@@ -2,10 +2,12 @@
   import avatarIcon from '../assets/avatar.png';
   import chatIcon from '../assets/chat.svg';
   import type { WebSocketService } from '../services/websocket';
+  import type { Request } from '../types/websocket';
   import { screenEnabled } from '../stores/screen';
   import { receivedAudioData, audioLevel } from '../stores/audio';
   import { audioPlayer } from '../services/audioplayer';
-  import { chatEnabled } from '../stores/chat';
+  import { chatEnabled, chatMessages, type ChatMessage, addMessage } from '../stores/chat';
+    import { get } from 'svelte/store';
 
   export let wsHandler: WebSocketService;
 
@@ -23,7 +25,7 @@
   let selectedLanguage = 'en';
   let microphoneEnabled = false;
   let speakerEnabled = false;
-  let terminalEnabled = false;
+  let terminalEnabled = true;
   let paperclipEnabled = false;
   let avatarEnabled = false; // Toggle for woman portrait
   let terminalText = ''; // Add new variable for terminal text
@@ -31,12 +33,14 @@
 
   function handleSendMessage() {
     if (terminalText.trim()) {
-      wsHandler.sendMessage({
+      const request: Request = {
         type: 'Request',
         timestamp: Date.now(),
         data: terminalText,
-        mimeType: "text/plain"
-      });
+        context: "user"
+      };
+      wsHandler.sendMessage(request);
+      addMessage(request);
       terminalText = ''; // Clear the input after sending
     }
   }
