@@ -7,10 +7,8 @@
   import { receivedAudioData, audioLevel, microphoneEnabled } from '../stores/audio';
   import { audioPlayer } from '../services/audioplayer';
   import { chatEnabled, addMessage } from '../stores/chat';  
-  import { configuration } from '../stores/websocket';  
+  import { configuration, wsService } from '../stores/websocket';  
   import AudioCapture from './AudioCapture.svelte';
-
-  export let wsHandler: WebSocketService;
 
   const languages = [
     { code: 'en', name: 'English' },
@@ -37,7 +35,7 @@
         data: terminalText,
         context: "user"
       };
-      wsHandler.sendMessage(request);
+      $wsService?.sendMessage(request);
       addMessage(request);
       terminalText = ''; // Clear the input after sending
     }
@@ -136,7 +134,7 @@
     </button>
   </div>
   
-  <AudioCapture {wsHandler} />
+  <AudioCapture />
 
   {#if terminalEnabled}
     <div class="terminal-container">

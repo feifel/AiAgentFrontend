@@ -1,5 +1,5 @@
 import type { AudioStream, WebSocketMessage, Response, Configuration } from '../types/websocket';
-import { audioStream, response } from '../stores/websocket';
+import { audioStream, response, configuration } from '../stores/websocket';
 import { get } from 'svelte/store';
 
 export class WebSocketService {
@@ -11,10 +11,8 @@ export class WebSocketService {
   private readonly INITIAL_RECONNECT_DELAY = 5000;
   private readonly CONNECTION_TIMEOUT = 30000;
   public isConnected = false;
-  private configStore: any = null;
 
-  constructor(private url: string, configurationStore?: any) {
-    this.configStore = configurationStore;
+  constructor(private url: string) {
     this.connect();
   }
 
@@ -41,9 +39,7 @@ export class WebSocketService {
         this.reconnectAttempts = 0;
         this.isConnected = true;        
         // Send configuration if available
-        if (this.configStore) {
-          this.sendMessage(get(this.configStore));
-        }
+        this.sendMessage(get(configuration));
       };
 
       this.ws.onclose = () => {

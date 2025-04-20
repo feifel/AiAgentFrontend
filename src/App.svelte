@@ -1,21 +1,17 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { WebSocketService } from './services/websocket';
-  import { configuration, wsService } from './stores/websocket';
+  import { wsService } from './stores/websocket';
   import Desktop from './components/Desktop.svelte';
   import Toolbar from './components/Toolbar.svelte';
 
-  let wsHandler: WebSocketService;
-
   onMount(() => {
-    // Pass the configuration store to the WebSocketService
-    wsHandler = new WebSocketService('ws://localhost:9073', configuration);
     // Set the WebSocketService instance in the store
-    wsService.set(wsHandler);
+    wsService.set(new WebSocketService('ws://localhost:9073'));
   });
 
   onDestroy(() => {
-    wsHandler?.dispose();
+    $wsService?.dispose();
     // Clear the WebSocketService instance from the store
     wsService.set(null);
   });
@@ -24,9 +20,9 @@
 <div class="layout">
   <h1 class="title">AI Agent</h1>
   <main class="main-content">
-    <Desktop {wsHandler} />
+    <Desktop/>
   </main>
-  <Toolbar {wsHandler} />
+  <Toolbar/>
 </div>
 
 <style>

@@ -5,9 +5,6 @@
   import ScreenShare from './ScreenShare.svelte';
   import { chatEnabled } from '../stores/chat';
   import { screenEnabled } from '../stores/screen';
-  import type { WebSocketService } from '../services/websocket';
-
-  export let wsHandler: WebSocketService;
 
   // Window positions and sizes
   type WindowState = { x: number; y: number; w: number; h: number };
@@ -304,7 +301,7 @@
       <button class="close-btn" on:click={() => screenEnabled.set(false)} aria-label="Close screenshare window">×</button>
       </div>
       <div class="window-content">
-      <ScreenShare {wsHandler} />
+      <ScreenShare/>
       </div>
       <button class="resize-handle" type="button" aria-label="Resize screenshare window" tabindex="-1" on:mousedown|stopPropagation={ (e) => startResize(e, 'screen') }></button>
     </div>

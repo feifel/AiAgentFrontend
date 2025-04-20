@@ -3,8 +3,7 @@
     import { Base64 } from 'js-base64';
     import type { WebSocketService } from '../services/websocket';
     import { audioLevel, microphoneEnabled } from '../stores/audio';
-
-    export let wsHandler: WebSocketService;
+    import { wsService } from '../stores/websocket';
 
     interface AudioStats {
         rms: number;
@@ -77,7 +76,7 @@
                 
                 if (pcmData) {
                     const base64Data = Base64.fromUint8Array(new Uint8Array(pcmData));
-                    wsHandler.sendMessage({
+                    $wsService?.sendMessage({
                         type: 'AudioStream',
                         timestamp: Date.now(),
                         data: base64Data,

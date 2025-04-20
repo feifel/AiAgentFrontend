@@ -1,8 +1,7 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte';
+    import { wsService } from '../stores/websocket';
     import type { WebSocketService } from '../services/websocket';
-
-    export let wsHandler: WebSocketService;
 
     let isSharing = false;
     let videoRef: HTMLVideoElement;
@@ -10,12 +9,12 @@
    
     // Start sharing automatically when component is mounted
     onMount(() => {
-        if (wsHandler.isConnected) {
+        if ($wsService?.isConnected) {
             startSharing();
         } else {
             // If not connected yet, wait for connection
             const checkConnection = setInterval(() => {
-                if (wsHandler.isConnected) {
+                if ($wsService?.isConnected) {
                     clearInterval(checkConnection);
                     startSharing();
                 }
@@ -53,7 +52,7 @@
                         if (ctx) {
                             ctx.drawImage(videoRef, 0, 0);
                             const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-                            wsHandler.sendMessage({
+                            $wsService?.sendMessage({
                                 type: 'ScreenShot',
                                 timestamp: Date.now(),
                                 data: imageData,                                
@@ -101,7 +100,7 @@
     
     <div class="status-indicator">
         {#if !isSharing}
-            <span class="sharing-inactive">{wsHandler.isConnected ? "Initializing screen share..." : "Connecting to server..."}</span>
+            <span class="sharing-inactive">{$wsService?.isConnected ? "Initializing screen share..." : "Connecting to server..."}</span>
         {/if}
     </div>
 </div>
