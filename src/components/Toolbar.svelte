@@ -4,10 +4,10 @@
   import type { WebSocketService } from '../services/websocket';
   import type { Request } from '../types/websocket';
   import { screenEnabled } from '../stores/screen';
-  import { receivedAudioData, audioLevel } from '../stores/audio';
+  import { receivedAudioData, audioLevel, microphoneEnabled } from '../stores/audio';
   import { audioPlayer } from '../services/audioplayer';
-  import { chatEnabled, chatMessages, type ChatMessage, addMessage } from '../stores/chat';
-    import { get } from 'svelte/store';
+  import { chatEnabled, addMessage } from '../stores/chat';
+  import AudioCapture from './AudioCapture.svelte';
 
   export let wsHandler: WebSocketService;
 
@@ -23,13 +23,11 @@
 
   let selectedLLM = 'gemma-3';
   let selectedLanguage = 'en';
-  let microphoneEnabled = false;
   let speakerEnabled = false;
   let terminalEnabled = true;
   let paperclipEnabled = false;
   let avatarEnabled = false; // Toggle for woman portrait
   let terminalText = ''; // Add new variable for terminal text
-  let playbackAudioLevel = 0;
 
   function handleSendMessage() {
     if (terminalText.trim()) {
@@ -83,8 +81,8 @@
 
     <button 
       class="toggle-button" 
-      class:active={microphoneEnabled} 
-      onclick={() => microphoneEnabled = !microphoneEnabled}
+      class:active={$microphoneEnabled} 
+      onclick={() => microphoneEnabled.set(!$microphoneEnabled)}
     >
       🎤
     </button>
@@ -135,14 +133,7 @@
     </button>
   </div>
   
-  {#if microphoneEnabled || $receivedAudioData}
-    <div class="audio-level">
-      <div 
-        class="audio-level-indicator" 
-        style="width: {Math.max($audioLevel, playbackAudioLevel)}%"
-      ></div>
-    </div>
-  {/if}
+  <AudioCapture {wsHandler} />
 
   {#if terminalEnabled}
     <div class="terminal-container">
@@ -302,16 +293,4 @@
     }
   }
 
-  .audio-level {
-    width: 100%;
-    background-color: var(--audio-level-bg, #333333);
-    border-radius: 2px;
-  }
-
-  .audio-level-indicator {
-    height: 100%;
-    background-color: var(--audio-level-indicator, #3b82f6);
-    border-radius: 2px;
-    transition: width 0.1s ease;
-  }
 </style>
