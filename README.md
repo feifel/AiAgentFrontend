@@ -55,3 +55,6 @@ This project was heavily inspired by https://github.com/yeyu2/multimodal-client-
         2. Implement LightRAG: https://www.youtube.com/watch?v=Fx3J8k--U3E
     2. Integrate n8n (via MCP server): https://www.youtube.com/watch?v=WcIRVk8kyJk
    
+
+## Similar projects
+1. https://github.com/TEN-framework/TEN-Agent
