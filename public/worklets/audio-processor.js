@@ -1,12 +1,11 @@
 class AudioProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super();
-    this.sampleRate = options.processorOptions.sampleRate || 16000;
+    this.sampleRate = options.processorOptions.sampleRate || 24000;
     this.bufferSize = options.processorOptions.bufferSize || 4096;
     this.buffer = new Float32Array(this.bufferSize);
     this.bufferIndex = 0;
     this.isProcessing = false;
-    this.sampleCount = 0;
     this.totalSamples = 0;
     this.maxLevel = -Infinity;
     this.minLevel = Infinity;
@@ -26,19 +25,7 @@ class AudioProcessor extends AudioWorkletProcessor {
   process(inputs, outputs, parameters) {
     // Get the first channel of the first input
     const input = inputs[0][0];
-    
-    // Log diagnostic info every 50 buffers
-    if (this.sampleCount % 50 === 0) {
-      console.log('Audio processing stats:', {
-        totalSamples: this.totalSamples,
-        maxLevel: this.maxLevel,
-        minLevel: this.minLevel,
-        currentInputLength: input ? input.length : 0,
-        hasInput: !!input
-      });
-    }
-    this.sampleCount++;
-    
+        
     // Always process, even with empty input (send silence)
     if (!input || input.length === 0) {
       // If we haven't sent data in a while, send what we have (even if buffer not full)
@@ -88,18 +75,6 @@ class AudioProcessor extends AudioWorkletProcessor {
     }
     const rms = Math.sqrt(sumSquares / this.bufferIndex);
     const level = Math.min(rms * 100 * 5, 100);
-    
-    // Log buffer statistics periodically
-    if (this.sampleCount % 50 === 0) {
-      console.log('Buffer statistics:', {
-        bufferSize: this.bufferIndex,
-        rms: rms,
-        level: level,
-        maxAmplitude: maxAmplitude,
-        avgAbsoluteValue: Array.from(this.buffer).slice(0, this.bufferIndex)
-          .reduce((sum, val) => sum + Math.abs(val), 0) / this.bufferIndex
-      });
-    }
     
     // Convert to 16-bit PCM
     const pcmData = new Int16Array(this.bufferIndex);

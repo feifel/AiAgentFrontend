@@ -26,14 +26,11 @@ This is the Frontend for my AI Agent Backend (see other project). You can talk a
     ```
     npm install
     ```    
-3. Set up the websocket server url. Open the App.tsx and find the line:    
+3. Set up the websocket server url. Open the src/App.svelte and find the line:    
     ```
-     <WebSocketProvider url="ws://your-websocket-server-url">
+     wsService.set(new WebSocketService('ws://localhost:9073'));
     ```    
-    Replace the websocket server url with 
-    [localhost:9073](http://localhost:9073). 
-    The port should be the one that your AI Agent Backend is running 
-    (see other project).    
+    Replace the websocket server port with the port your AI Agent Backend is running on (see other project).    
 4. Run the development server    
     ```
     npm run dev
@@ -44,14 +41,17 @@ This is the Frontend for my AI Agent Backend (see other project). You can talk a
 This project was heavily inspired by https://github.com/yeyu2/multimodal-client-vite
 
 ## Roadmap
-1. Implement a proper chat history
-2. Add a toolbar in a separate Svelte 5 app 
-    1. Add a dropdown list to select the LLM (gemma-3, Qwen2.5, llama, etc.)
-    2. Add a dropdown to select the language
-    3. Add the following toggle buttons to show additional outout in a modal window (only one at a time or none):
-        1. Screensharing to show the shared screen
-        2. Talking Avatar to show a talking avatar with lipsync
-    4. Add the following toggle buttons to select the input:
-        1. Headset, to select audio input (shows the current audio level in a bar below the toolbar)
-        2. Keyboard, to select keyboard input (shows a text area with a send button)
-        3. Paperclip, to attach files
+1. Add support for Attachments (use Paperclip button to attach files)
+2. Add a cancel button, to stop the audio output/playback
+3. Implement interruption via audio, similar to cancel button
+4. Implement a Microphone in the text area to add some text via Audio, but have the option to edit it before sending
+5. Implement visualization of an Avatar with Lipsync by using https://github.com/Rudrabha/Wav2Lip
+6. Add support to select different tools retrieved from an MCP server
+    1. Implement MCP server: 
+        1. Implement Mem0: https://www.youtube.com/watch?v=lbyPJqCI-tw
+        2. Implement LightRAG: https://www.youtube.com/watch?v=Fx3J8k--U3E
+    2. Integrate n8n (via MCP server): https://www.youtube.com/watch?v=WcIRVk8kyJk
+   
+
+## Similar projects
+1. https://github.com/TEN-framework/TEN-Agent
