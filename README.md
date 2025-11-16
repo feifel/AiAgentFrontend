@@ -26,14 +26,11 @@ This is the Frontend for my AI Agent Backend (see other project). You can talk a
     ```
     npm install
     ```    
-3. Set up the websocket server url. Open the App.tsx and find the line:    
+3. Set up the websocket server url. Open the src/App.svelte and find the line:    
     ```
-     <WebSocketProvider url="ws://your-websocket-server-url">
+     wsService.set(new WebSocketService('ws://localhost:9073'));
     ```    
-    Replace the websocket server url with 
-    [localhost:9073](http://localhost:9073). 
-    The port should be the one that your AI Agent Backend is running 
-    (see other project).    
+    Replace the websocket server port with the port your AI Agent Backend is running on (see other project).    
 4. Run the development server    
     ```
     npm run dev
