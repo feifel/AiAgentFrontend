@@ -107,6 +107,7 @@
   .content-text {
     margin-top: 0px;
     margin-bottom: 0px;
+    user-select: text;
   }
   .user .content {
     background-color: var(--btn-primary-bg, #3b82f6);
@@ -126,6 +127,7 @@
 
   .user .timestamp {
     text-align: right;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .screen-share-overlay {

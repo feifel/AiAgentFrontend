@@ -6,7 +6,7 @@ class AudioPlayerService {
   private async initAudioContext() {
     if (!this.audioContext) {
       this.audioContext = new AudioContext({
-        sampleRate: 24000, // Match the server's sample rate
+        sampleRate: 22050, // Match the server's sample rate
       });
     }
     return this.audioContext;
@@ -34,7 +34,7 @@ class AudioPlayerService {
           offset += int16Data.length;
         });
         
-        const audioBuffer = ctx.createBuffer(1, totalLength, 24000);
+        const audioBuffer = ctx.createBuffer(1, totalLength, 22050);
         const channelData = audioBuffer.getChannelData(0);
         
         // Convert and smooth the audio data
